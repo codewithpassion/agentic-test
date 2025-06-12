@@ -35,8 +35,12 @@ export const auth = betterAuth({
 	},
 	user: {
 		additionalFields: {
-			roles: {
-				type: "string[]",
+			role: {
+				type: "string",
+				defaultValue: "user",
+				validation: {
+					enum: ["user", "admin", "superadmin"],
+				},
 			},
 		},
 	},
@@ -60,3 +64,6 @@ export const auth = betterAuth({
 		}),
 	],
 });
+
+export type Session = typeof auth.$Infer.Session;
+export type User = typeof auth.$Infer.Session.user;
