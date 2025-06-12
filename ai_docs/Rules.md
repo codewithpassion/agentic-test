@@ -15,6 +15,7 @@
 - Tab indentation (not spaces)
 - Double quotes for strings
 - Imports are auto-organized by Biome
+- NEVER USE `any` as a type. We need strict Typescript typing
 
 ## Naming Conventions
 - React components use PascalCase
@@ -30,11 +31,14 @@
 - Utilize ShadCN components from `app/components/ui`
 - Authentication through `better-auth` package
 
+
 ## Backend
 - Always use `bun` as the package manager
 - Use `hono` for backend functionality
+- use the `packages/better-auth/auth.ts` on the server side to access better-auth
 - Database: Drizzle ORM with schemas in `api/database/schema.ts` (SQLite tables)
 - Data storage: Cloudflare D1 and KV with Drizzle ORM
+- Use tRPC for API access
 
 ## Environment Variables & Types
 - **Never directly edit** `worker-configuration.d.ts` (auto-generated file)
@@ -42,3 +46,9 @@
 - Add secrets to `.dev.vars` for local development and `.dev.vars.example` for documentation
 - Run `bun cf-typegen` to regenerate TypeScript types after changes
 - Use `wrangler secret put VARIABLE_NAME` for production secrets
+
+# MCP:
+- make sure you check context7 for up to date library specifications
+
+# Linting
+After every change, run `bun check` to make sure the linter is happy

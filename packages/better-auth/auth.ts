@@ -33,6 +33,13 @@ export const auth = betterAuth({
 		//     clientSecret: process.env.DISCORD_CLIENT_SECRET!,
 		// },
 	},
+	user: {
+		additionalFields: {
+			roles: {
+				type: "string[]",
+			},
+		},
+	},
 	plugins: [
 		admin(),
 		magicLink({
