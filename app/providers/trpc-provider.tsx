@@ -14,7 +14,9 @@ export function TRPCProvider({ children }: TRPCProviderProps) {
 				defaultOptions: {
 					queries: {
 						staleTime: 5 * 60 * 1000, // 5 minutes
-						retry: (failureCount, error: unknown) => {
+						// @ts-ignore
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						retry: (failureCount, error: any) => {
 							// Don't retry on 4xx errors
 							if (
 								error?.data?.httpStatus >= 400 &&
