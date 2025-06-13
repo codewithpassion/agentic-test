@@ -1,12 +1,12 @@
-import { useSession } from "better-auth/react";
 import {
 	canPerformAction,
 	hasPermission,
 	hasRole,
 	isAdmin,
 	isSuperAdmin,
-} from "./permissions";
-import type { AuthUser, Permission, UserRole } from "./types";
+} from "../../workers/permissions";
+import type { AuthUser, Permission, UserRole } from "../../workers/types";
+import { useSession } from "./auth-client";
 
 /**
  * React hook for authentication with role information

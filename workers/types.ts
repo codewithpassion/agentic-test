@@ -31,7 +31,7 @@ export type Session = typeof authSchema.session.$inferSelect;
 export type UserRole = "user" | "admin" | "superadmin";
 
 export interface AuthUser extends User {
-	role: UserRole;
+	roles: UserRole[];
 }
 
 export interface AuthSession extends Session {

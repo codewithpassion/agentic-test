@@ -1,11 +1,7 @@
 import { getCloudflareContext } from "packages/better-auth/cloudflare";
-import {
-	hasPermission,
-	hasRole,
-	isAdmin,
-} from "../packages/better-auth/permissions";
 import { authFactory } from "./auth";
-import type { AppType, AuthUser } from "./types";
+import { hasPermission, hasRole, isAdmin } from "./permissions";
+import type { AppType, AuthUser, Permission, UserRole } from "./types";
 
 /**
  * Get authenticated user from request

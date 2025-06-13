@@ -15,9 +15,10 @@ export async function authFactory(env: AppType["Bindings"], request: Request) {
 		throw new Error("SESSIONS is not defined");
 	}
 
-	const emailService = env.RESEND_API_KEY
-		? new ResendEmailService(env)
-		: new MockEmailService();
+	const emailService =
+		env.RESEND_API_KEY && env.DEV_MODE !== "true"
+			? new ResendEmailService(env)
+			: new MockEmailService();
 
 	const db = env
 		? drizzle(env.DB, { schema: authSchema, logger: true })
@@ -47,7 +48,7 @@ export async function authFactory(env: AppType["Bindings"], request: Request) {
 				socialProviders: {},
 				user: {
 					additionalFields: {
-						role: {
+						roles: {
 							type: "string[]",
 							defaultValue: "user",
 							validation: {
@@ -89,7 +90,3 @@ export async function authFactory(env: AppType["Bindings"], request: Request) {
 	});
 	return auth;
 }
-
-// magicLink({
-
-// }),

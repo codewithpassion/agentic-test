@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { isAdmin } from "../../../packages/better-auth/permissions";
+import { isAdmin } from "../../../workers/permissions";
 import { categories, competitions } from "../../database/schema";
 import {
 	competitionStatusSchema,

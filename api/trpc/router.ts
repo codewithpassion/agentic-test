@@ -1,11 +1,7 @@
 import { TRPCError, initTRPC } from "@trpc/server";
 import superjson from "superjson";
-import {
-	hasPermission,
-	hasRole,
-	isAdmin,
-} from "../../packages/better-auth/permissions";
 import type { Permission, UserRole } from "../../packages/better-auth/types";
+import { hasPermission, hasRole, isAdmin } from "../../workers/permissions";
 import type { Context } from "./context";
 
 const t = initTRPC.context<Context>().create({

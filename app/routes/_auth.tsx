@@ -1,5 +1,3 @@
-import type React from "react";
-import type { JSX, ReactNode } from "react";
 import {
 	type AppLoadContext,
 	type LoaderFunctionArgs,

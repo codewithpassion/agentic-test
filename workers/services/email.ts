@@ -26,7 +26,7 @@ export class ResendEmailService implements EmailService {
 		this.resend = new Resend(env.RESEND_API_KEY);
 		this.fromEmail = env.FROM_EMAIL || "noreply@example.com";
 		this.fromName = env.FROM_NAME || "Your App";
-		this.brandLogoUrl = env.BRAND_LOGO_URL;
+		this.brandLogoUrl = ""; //env.BRAND_LOGO_URL;
 		this.supportEmail = env.SUPPORT_EMAIL || "support@example.com";
 		this.devMode = env.DEV_MODE === "true";
 	}
