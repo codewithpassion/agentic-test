@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { user } from "../../packages/better-auth/db/auth-schema";
 
+import type { UserRole } from "~~/types";
 import type { createDb, createDbWithSchema } from "./db";
 
 // Type for database instance (can be with or without schema)

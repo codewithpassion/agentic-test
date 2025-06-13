@@ -11,7 +11,7 @@ import { useSession } from "./auth-client";
 /**
  * React hook for authentication with role information
  */
-export function useAuthUser() {
+export function useAuthUser(user?: AuthUser) {
 	const { data: session, isPending, error } = useSession();
 
 	return {
@@ -26,9 +26,16 @@ export function useAuthUser() {
 /**
  * React hook for permission checking
  */
-export function usePermissions() {
-	const { user } = useAuthUser();
-
+export function usePermissions(user: AuthUser | undefined) {
+	if (!user) {
+		return {
+			hasPermission: () => false,
+			hasRole: () => false,
+			isAdmin: () => false,
+			isSuperAdmin: () => false,
+			canPerformAction: () => false,
+		};
+	}
 	return {
 		hasPermission: (permission: Permission) => hasPermission(user, permission),
 		hasRole: (role: UserRole) => hasRole(user, role),
@@ -64,8 +71,13 @@ export function useRoleGuard() {
 		 * Render different content based on user role
 		 */
 		switchRole: (components: Partial<Record<UserRole, React.ReactNode>>) => {
-			if (!user) return null;
-			return components[user.role] || null;
+			if (!user || !user.roles) return null;
+			for (const role of user.roles) {
+				if (components[role]) {
+					return components[role];
+				}
+			}
+			return null;
 		},
 	};
 }

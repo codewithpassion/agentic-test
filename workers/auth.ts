@@ -1,7 +1,7 @@
 import { authSchema } from "@portcityai/better-auth";
 import { betterAuth } from "better-auth";
 import { withCloudflare } from "better-auth-cloudflare";
-import { magicLink } from "better-auth/plugins";
+import { customSession, magicLink } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1";
 import { MockEmailService, ResendEmailService } from "./services/email";
 import type { AppType } from "./types";
@@ -50,15 +50,30 @@ export async function authFactory(env: AppType["Bindings"], request: Request) {
 					additionalFields: {
 						roles: {
 							type: "string[]",
-							defaultValue: "user",
+							defaultValue: ["user"],
 							validation: {
 								enum: ["user", "admin", "superadmin"],
 							},
 						},
 					},
 				},
+
 				baseURL: baseUrl,
 				plugins: [
+					customSession(async ({ user, session }) => {
+						if (env.DEV_MODE && user.email === "dominik.fretz@gmail.com") {
+							const res = {
+								user: {
+									...user,
+									// @ts-ignore
+									roles: [user.roles, "superadmin"],
+								},
+								session,
+							};
+							return res;
+						}
+						return { user, session };
+					}),
 					magicLink({
 						async sendMagicLink(data) {
 							const result = await emailService.sendMagicLink({

@@ -13,10 +13,13 @@ export function hasPermission(
 	user: AuthUser | null,
 	permission: Permission,
 ): boolean {
-	if (!user) return false;
+	if (!user || !user.roles) return false;
 
-	const userPermissions = ROLE_PERMISSIONS[user.role] || [];
-	return userPermissions.includes(permission);
+	// Check if any of the user's roles have the required permission.
+	return user.roles.some((role) => {
+		const userPermissions = ROLE_PERMISSIONS[role] || [];
+		return userPermissions.includes(permission);
+	});
 }
 
 /**
@@ -26,9 +29,14 @@ export function hasRole(
 	user: AuthUser | null,
 	requiredRole: UserRole,
 ): boolean {
-	if (!user) return false;
+	if (!user || !user.roles || user.roles.length === 0) {
+		return false;
+	}
 
-	const userLevel = ROLE_HIERARCHY[user.role] || 0;
+	// Find the highest role level the user has
+	const userLevel = Math.max(
+		...user.roles.map((role) => ROLE_HIERARCHY[role] || 0),
+	);
 	const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
 
 	return userLevel >= requiredLevel;
@@ -38,7 +46,7 @@ export function hasRole(
  * Check if a user is an admin (admin or superadmin)
  */
 export function isAdmin(user: AuthUser | null): boolean {
-	return hasRole(user, "admin");
+	return hasRole(user, "admin") || hasRole(user, "superadmin");
 }
 
 /**
@@ -74,8 +82,13 @@ export function canPerformAction(
  * Get all permissions for a user
  */
 export function getUserPermissions(user: AuthUser | null): Permission[] {
-	if (!user) return [];
-	return ROLE_PERMISSIONS[user.role] || [];
+	if (!user || !user.roles) return [];
+
+	// Collect all unique permissions from all of the user's roles.
+	const allPermissions = user.roles.flatMap(
+		(role) => ROLE_PERMISSIONS[role] || [],
+	);
+	return [...new Set(allPermissions)]; // Return unique permissions
 }
 
 /**
@@ -111,5 +124,5 @@ export function canModifyUser(
 
 	// Superadmins can modify anyone except other superadmins
 	// (prevents accidental lockout)
-	return target.role !== "superadmin";
+	return !target.roles.includes("superadmin");
 }

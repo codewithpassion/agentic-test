@@ -3,8 +3,11 @@ import {
 	type LoaderFunctionArgs,
 	Outlet,
 	redirect,
+	useLoaderData,
 } from "react-router";
+import { AuthProvider } from "~/contexts/auth-context";
 import { authFactory } from "~~/auth";
+import type { AuthUser } from "~~/types";
 
 export async function loader(args: LoaderFunctionArgs) {
 	const c: AppLoadContext = args.context;
@@ -18,12 +21,22 @@ export async function loader(args: LoaderFunctionArgs) {
 	if (!session || !session.user) {
 		return redirect("/login");
 	}
+	return {
+		session,
+	};
 }
 
 export default function Protected() {
+	const { session } = useLoaderData<typeof loader>();
+
+	// @ts-ignore
+	const user: AuthUser | undefined = session?.user || undefined;
+
 	return (
 		<>
-			<Outlet />
+			<AuthProvider user={user}>
+				<Outlet />
+			</AuthProvider>
 		</>
 	);
 }
