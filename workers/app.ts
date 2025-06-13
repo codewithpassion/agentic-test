@@ -1,8 +1,12 @@
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 /// <reference path="../worker-configuration.d.ts" />
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { cloudflareContextMiddleware } from "packages/better-auth";
 import { type AppLoadContext, createRequestHandler } from "react-router";
 import { authFactory } from "~~/auth";
+import { appRouter } from "../api/trpc";
+import { createContext } from "../api/trpc/context";
 import { D1DbMiddleware } from "./middleware";
 import type { AppType } from "./types";
 
@@ -27,6 +31,26 @@ const app = new Hono<AppType>();
 app.use(cloudflareContextMiddleware);
 app.use(D1DbMiddleware);
 
+// CORS configuration for API routes
+app.use(
+	"/api/*",
+	cors({
+		origin: (origin) => {
+			// Allow all origins in development
+			if (import.meta.env.DEV) return origin || "*";
+
+			// Configure allowed origins for production
+			const allowedOrigins = [
+				"https://your-domain.com",
+				"https://www.your-domain.com",
+			];
+
+			return allowedOrigins.includes(origin || "") ? origin : "";
+		},
+		credentials: true,
+	}),
+);
+
 app.get("/api/health", (c) => {
 	return c.json({ status: "ok" });
 });
@@ -34,6 +58,19 @@ app.get("/api/health", (c) => {
 app.get("/api/seed", async (c) => {
 	await c.var.Database.seed();
 	return c.json({ status: "ok" });
+});
+
+// tRPC handler
+app.all("/api/trpc/*", async (c) => {
+	return fetchRequestHandler({
+		endpoint: "/api/trpc",
+		req: c.req.raw,
+		router: appRouter,
+		createContext: (opts) => createContext({ ...opts, env: c.env }),
+		onError: ({ error, path }) => {
+			console.error(`tRPC Error on path '${path}':`, error);
+		},
+	});
 });
 
 // Authentication routes

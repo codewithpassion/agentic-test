@@ -1,20 +1,22 @@
-import { auth } from "../packages/better-auth/auth";
+import { getCloudflareContext } from "packages/better-auth/cloudflare";
 import {
 	hasPermission,
 	hasRole,
 	isAdmin,
 } from "../packages/better-auth/permissions";
-import type {
-	AuthUser,
-	Permission,
-	UserRole,
-} from "../packages/better-auth/types";
+import { authFactory } from "./auth";
+import type { AppType, AuthUser } from "./types";
 
 /**
  * Get authenticated user from request
  */
 export async function getAuthUser(request: Request): Promise<AuthUser | null> {
 	try {
+		const env = getCloudflareContext()?.env as unknown as AppType["Bindings"];
+		if (!env) {
+			throw new Error("Cloudflare environment is not available");
+		}
+		const auth = await authFactory(env, request);
 		const session = await auth.api.getSession({
 			headers: request.headers,
 		});
