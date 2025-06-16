@@ -46,3 +46,6 @@ This is a modern React application deployed to Cloudflare with authentication, s
 - tRPC routers in `/api/trpc/routers/` with proper input validation using Zod
 - Custom hooks in `/app/hooks/` for tRPC queries with caching
 - Always handle loading and error states in components
+
+## ShadCN Components
+- When adding a shadcn component, always use `bunx --bun shadcn@latest add COMPONENT`
