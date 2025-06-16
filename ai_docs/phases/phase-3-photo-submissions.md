@@ -43,7 +43,8 @@ Implement the core photo submission functionality for authenticated users, inclu
 ## Technical Implementation
 
 ### File Upload Infrastructure
-- Cloudflare R2 integration for photo storage
+- Cloudflare R2 integration for photo storage (AWS S3 compatible)
+- Update wrangler.toml to configure R2 bucket bindings
 - Image processing and optimization
 - Thumbnail generation
 - Secure upload endpoints
@@ -122,10 +123,10 @@ upload.deleteFile
 ## Key Components to Create
 
 ### User Pages
-- `app/routes/submit._index.tsx` - Competition selection
-- `app/routes/submit.$competitionId.tsx` - Category selection
-- `app/routes/submit.$competitionId.$categoryId.tsx` - Photo upload
-- `app/routes/my-submissions.tsx` - User's submissions
+- `app/routes/_auth.submit._index.tsx` - Competition selection
+- `app/routes/_auth.submit.$competitionId.tsx` - Category selection
+- `app/routes/_auth.submit.$competitionId.$categoryId.tsx` - Photo upload
+- `app/routes/_auth.my-submissions.tsx` - User's submissions
 - `app/routes/gallery._index.tsx` - Public gallery
 - `app/routes/gallery.$competitionId.tsx` - Competition gallery
 
@@ -142,13 +143,19 @@ upload.deleteFile
 - Image processing utilities
 - File validation helpers
 
-## File Storage Structure
+## File Storage Structure (Cloudflare R2)
 ```
 /competitions/{competition-id}/
   /originals/{photo-id}.{ext}
   /thumbnails/{photo-id}_thumb.jpg
   /medium/{photo-id}_medium.jpg
 ```
+
+### R2 Setup Requirements
+- Create R2 bucket for photo storage
+- Configure wrangler.jsonc with R2 bucket bindings
+- Set up environment variables for R2 access
+- Configure CORS settings for direct uploads
 
 ## Success Criteria
 - [ ] Users can upload photos successfully
@@ -178,7 +185,8 @@ upload.deleteFile
 ## Dependencies
 - Phase 1: Foundation & Authentication
 - Phase 2: Competition Management
-- Cloudflare R2 storage setup
+- Cloudflare R2 storage setup with bucket creation
+- Update wrangler.toml to enable R2 bindings
 - Image processing libraries
 - File upload components
 
