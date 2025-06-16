@@ -146,7 +146,7 @@ export const photosRouter = router({
 		.query(async ({ ctx, input }) => {
 			try {
 				const photoService = new PhotoService(ctx.env.DB);
-				const photo = await photoService.getPhotoById(input.id);
+				const photo = await photoService.getPhotoByIdWithRelations(input.id);
 
 				if (!photo) {
 					throw new TRPCError({
@@ -230,6 +230,66 @@ export const photosRouter = router({
 				});
 			}
 		}),
+
+	/**
+	 * Get user's submission statistics
+	 */
+	getSubmissionStats: protectedProcedure.query(async ({ ctx }) => {
+		const { db, user } = ctx;
+
+		// Get overall statistics
+		const totalStats = await db
+			.select({
+				total: sql<number>`COUNT(*)`,
+				pending: sql<number>`SUM(CASE WHEN ${photos.status} = 'pending' THEN 1 ELSE 0 END)`,
+				approved: sql<number>`SUM(CASE WHEN ${photos.status} = 'approved' THEN 1 ELSE 0 END)`,
+				rejected: sql<number>`SUM(CASE WHEN ${photos.status} = 'rejected' THEN 1 ELSE 0 END)`,
+			})
+			.from(photos)
+			.where(
+				and(eq(photos.userId, user.id), sql`${photos.status} != 'deleted'`),
+			)
+			.get();
+
+		// Get competitions entered count
+		const competitionsEntered = await db
+			.select({
+				count: sql<number>`COUNT(DISTINCT ${photos.competitionId})`,
+			})
+			.from(photos)
+			.where(
+				and(eq(photos.userId, user.id), sql`${photos.status} != 'deleted'`),
+			)
+			.get();
+
+		// Get recent activity (last 5 submissions)
+		const recentActivity = await db
+			.select({
+				id: photos.id,
+				title: photos.title,
+				status: photos.status,
+				createdAt: photos.createdAt,
+				competitionTitle: competitions.title,
+				categoryName: categories.name,
+			})
+			.from(photos)
+			.innerJoin(competitions, eq(photos.competitionId, competitions.id))
+			.innerJoin(categories, eq(photos.categoryId, categories.id))
+			.where(
+				and(eq(photos.userId, user.id), sql`${photos.status} != 'deleted'`),
+			)
+			.orderBy(sql`${photos.createdAt} DESC`)
+			.limit(5);
+
+		return {
+			totalSubmissions: totalStats?.total || 0,
+			pendingSubmissions: totalStats?.pending || 0,
+			approvedSubmissions: totalStats?.approved || 0,
+			rejectedSubmissions: totalStats?.rejected || 0,
+			competitionsEntered: competitionsEntered?.count || 0,
+			recentActivity,
+		};
+	}),
 
 	/**
 	 * Get submission context (competition + category + remaining slots)

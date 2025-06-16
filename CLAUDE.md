@@ -49,3 +49,6 @@ This is a modern React application deployed to Cloudflare with authentication, s
 
 ## ShadCN Components
 - When adding a shadcn component, always use `bunx --bun shadcn@latest add COMPONENT`
+
+## tRPC Integration
+- Use tRPC services for data loading and manipulation

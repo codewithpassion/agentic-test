@@ -176,6 +176,109 @@ export class PhotoService {
 	}
 
 	/**
+	 * Get photo by ID with relations
+	 */
+	async getPhotoByIdWithRelations(photoId: string): Promise<
+		| (Photo & {
+				competition: {
+					id: string;
+					title: string;
+					status: string;
+					endDate: Date | null;
+				};
+				category: { id: string; name: string; maxPhotosPerUser: number };
+		  })
+		| null
+	> {
+		const result = await this.db
+			.select({
+				// Photo fields
+				id: photos.id,
+				userId: photos.userId,
+				competitionId: photos.competitionId,
+				categoryId: photos.categoryId,
+				title: photos.title,
+				description: photos.description,
+				filePath: photos.filePath,
+				fileName: photos.fileName,
+				fileSize: photos.fileSize,
+				mimeType: photos.mimeType,
+				width: photos.width,
+				height: photos.height,
+				status: photos.status,
+				dateTaken: photos.dateTaken,
+				location: photos.location,
+				cameraMake: photos.cameraMake,
+				cameraModel: photos.cameraModel,
+				lens: photos.lens,
+				focalLength: photos.focalLength,
+				aperture: photos.aperture,
+				shutterSpeed: photos.shutterSpeed,
+				iso: photos.iso,
+				createdAt: photos.createdAt,
+				updatedAt: photos.updatedAt,
+				moderatedBy: photos.moderatedBy,
+				moderatedAt: photos.moderatedAt,
+				rejectionReason: photos.rejectionReason,
+				// Competition fields
+				competitionTitle: competitions.title,
+				competitionStatus: competitions.status,
+				competitionEndDate: competitions.endDate,
+				// Category fields
+				categoryName: categories.name,
+				categoryMaxPhotosPerUser: categories.maxPhotosPerUser,
+			})
+			.from(photos)
+			.innerJoin(competitions, eq(photos.competitionId, competitions.id))
+			.innerJoin(categories, eq(photos.categoryId, categories.id))
+			.where(eq(photos.id, photoId))
+			.get();
+
+		if (!result) return null;
+
+		return {
+			id: result.id,
+			userId: result.userId,
+			competitionId: result.competitionId,
+			categoryId: result.categoryId,
+			title: result.title,
+			description: result.description,
+			filePath: result.filePath,
+			fileName: result.fileName,
+			fileSize: result.fileSize,
+			mimeType: result.mimeType,
+			width: result.width,
+			height: result.height,
+			status: result.status,
+			dateTaken: result.dateTaken,
+			location: result.location,
+			cameraMake: result.cameraMake,
+			cameraModel: result.cameraModel,
+			lens: result.lens,
+			focalLength: result.focalLength,
+			aperture: result.aperture,
+			shutterSpeed: result.shutterSpeed,
+			iso: result.iso,
+			createdAt: result.createdAt,
+			updatedAt: result.updatedAt,
+			moderatedBy: result.moderatedBy,
+			moderatedAt: result.moderatedAt,
+			rejectionReason: result.rejectionReason,
+			competition: {
+				id: result.competitionId,
+				title: result.competitionTitle,
+				status: result.competitionStatus,
+				endDate: result.competitionEndDate,
+			},
+			category: {
+				id: result.categoryId,
+				name: result.categoryName,
+				maxPhotosPerUser: result.categoryMaxPhotosPerUser,
+			},
+		};
+	}
+
+	/**
 	 * Get user's submissions with filtering
 	 */
 	async getUserSubmissions(
@@ -187,7 +290,18 @@ export class PhotoService {
 			limit?: number;
 			offset?: number;
 		} = {},
-	): Promise<{ photos: Photo[]; total: number }> {
+	): Promise<{
+		photos: (Photo & {
+			competition: {
+				id: string;
+				title: string;
+				status: string;
+				endDate: Date | null;
+			};
+			category: { id: string; name: string; maxPhotosPerUser: number };
+		})[];
+		total: number;
+	}> {
 		const {
 			competitionId,
 			categoryId,
@@ -210,16 +324,96 @@ export class PhotoService {
 			.from(photos)
 			.where(whereClause);
 
-		// Get photos
+		// Get photos with relations
 		const photoList = await this.db
-			.select()
+			.select({
+				// Photo fields
+				id: photos.id,
+				userId: photos.userId,
+				competitionId: photos.competitionId,
+				categoryId: photos.categoryId,
+				title: photos.title,
+				description: photos.description,
+				filePath: photos.filePath,
+				fileName: photos.fileName,
+				fileSize: photos.fileSize,
+				mimeType: photos.mimeType,
+				width: photos.width,
+				height: photos.height,
+				status: photos.status,
+				dateTaken: photos.dateTaken,
+				location: photos.location,
+				cameraMake: photos.cameraMake,
+				cameraModel: photos.cameraModel,
+				lens: photos.lens,
+				focalLength: photos.focalLength,
+				aperture: photos.aperture,
+				shutterSpeed: photos.shutterSpeed,
+				iso: photos.iso,
+				createdAt: photos.createdAt,
+				updatedAt: photos.updatedAt,
+				moderatedBy: photos.moderatedBy,
+				moderatedAt: photos.moderatedAt,
+				rejectionReason: photos.rejectionReason,
+				// Competition fields
+				competitionTitle: competitions.title,
+				competitionStatus: competitions.status,
+				competitionEndDate: competitions.endDate,
+				// Category fields
+				categoryName: categories.name,
+				categoryMaxPhotosPerUser: categories.maxPhotosPerUser,
+			})
 			.from(photos)
+			.innerJoin(competitions, eq(photos.competitionId, competitions.id))
+			.innerJoin(categories, eq(photos.categoryId, categories.id))
 			.where(whereClause)
 			.orderBy(desc(photos.createdAt))
 			.limit(limit)
 			.offset(offset);
 
-		return { photos: photoList, total };
+		// Transform to expected format
+		const transformedPhotos = photoList.map((row) => ({
+			id: row.id,
+			userId: row.userId,
+			competitionId: row.competitionId,
+			categoryId: row.categoryId,
+			title: row.title,
+			description: row.description,
+			filePath: row.filePath,
+			fileName: row.fileName,
+			fileSize: row.fileSize,
+			mimeType: row.mimeType,
+			width: row.width,
+			height: row.height,
+			status: row.status,
+			dateTaken: row.dateTaken,
+			location: row.location,
+			cameraMake: row.cameraMake,
+			cameraModel: row.cameraModel,
+			lens: row.lens,
+			focalLength: row.focalLength,
+			aperture: row.aperture,
+			shutterSpeed: row.shutterSpeed,
+			iso: row.iso,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			moderatedBy: row.moderatedBy,
+			moderatedAt: row.moderatedAt,
+			rejectionReason: row.rejectionReason,
+			competition: {
+				id: row.competitionId,
+				title: row.competitionTitle,
+				status: row.competitionStatus,
+				endDate: row.competitionEndDate,
+			},
+			category: {
+				id: row.categoryId,
+				name: row.categoryName,
+				maxPhotosPerUser: row.categoryMaxPhotosPerUser,
+			},
+		}));
+
+		return { photos: transformedPhotos, total };
 	}
 
 	/**
