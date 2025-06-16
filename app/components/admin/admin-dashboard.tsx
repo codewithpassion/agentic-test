@@ -258,11 +258,21 @@ export function AdminDashboard() {
 											<Badge
 												variant={
 													competition.status === "active"
-														? "default"
-														: "secondary"
+														? "active"
+														: competition.status === "draft"
+															? "draft"
+															: competition.status === "completed"
+																? "completed"
+																: "inactive"
 												}
 											>
-												{competition.status}
+												{competition.status === "active"
+													? "Active"
+													: competition.status === "draft"
+														? "Draft"
+														: competition.status === "completed"
+															? "Completed"
+															: "Inactive"}
 											</Badge>
 										</div>
 									))}

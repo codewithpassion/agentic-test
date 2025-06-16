@@ -49,7 +49,12 @@ export default function CompetitionDetailPage() {
 		);
 	}
 
-	return <CompetitionDetail competition={competition} />;
+	return (
+		<CompetitionDetail
+			competition={competition}
+			onCompetitionUpdate={handleCompetitionUpdate}
+		/>
+	);
 }
 
 export function meta() {

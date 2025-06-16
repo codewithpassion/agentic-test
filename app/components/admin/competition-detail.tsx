@@ -24,9 +24,13 @@ import { trpc } from "~/lib/trpc";
 
 interface CompetitionDetailProps {
 	competition: Competition;
+	onCompetitionUpdate?: () => void;
 }
 
-export function CompetitionDetail({ competition }: CompetitionDetailProps) {
+export function CompetitionDetail({
+	competition,
+	onCompetitionUpdate,
+}: CompetitionDetailProps) {
 	const {
 		data: categories,
 		isLoading: categoriesLoading,
@@ -35,23 +39,38 @@ export function CompetitionDetail({ competition }: CompetitionDetailProps) {
 		competitionId: competition.id,
 	});
 
-	const { data: activeCompetition } = trpc.competitions.getActive.useQuery();
+	const { data: activeCompetition, refetch: refetchActiveCompetition } =
+		trpc.competitions.getActive.useQuery();
+	const utils = trpc.useUtils();
 
 	const activateMutation = trpc.competitions.activate.useMutation({
 		onSuccess: () => {
-			// Refetch competition data will be handled by parent component
+			// Invalidate and refetch relevant queries
+			utils.competitions.getById.invalidate({ id: competition.id });
+			utils.competitions.getActive.invalidate();
+			utils.competitions.list.invalidate();
+			refetchActiveCompetition();
+			onCompetitionUpdate?.();
 		},
 	});
 
 	const deactivateMutation = trpc.competitions.deactivate.useMutation({
 		onSuccess: () => {
-			// Refetch competition data will be handled by parent component
+			// Invalidate and refetch relevant queries
+			utils.competitions.getById.invalidate({ id: competition.id });
+			utils.competitions.getActive.invalidate();
+			utils.competitions.list.invalidate();
+			refetchActiveCompetition();
+			onCompetitionUpdate?.();
 		},
 	});
 
 	const deleteMutation = trpc.competitions.delete.useMutation({
 		onSuccess: () => {
-			// Navigation will be handled by parent component
+			// Invalidate queries and handle navigation
+			utils.competitions.list.invalidate();
+			utils.competitions.getActive.invalidate();
+			onCompetitionUpdate?.();
 		},
 	});
 
@@ -94,25 +113,13 @@ export function CompetitionDetail({ competition }: CompetitionDetailProps) {
 	const getStatusBadge = (status: Competition["status"]) => {
 		switch (status) {
 			case "active":
-				return (
-					<Badge className="bg-green-100 text-green-800 border-green-200">
-						Active
-					</Badge>
-				);
+				return <Badge variant="active">Active</Badge>;
 			case "draft":
-				return <Badge variant="secondary">Draft</Badge>;
+				return <Badge variant="draft">Draft</Badge>;
 			case "completed":
-				return (
-					<Badge className="bg-blue-100 text-blue-800 border-blue-200">
-						Completed
-					</Badge>
-				);
+				return <Badge variant="completed">Completed</Badge>;
 			case "inactive":
-				return (
-					<Badge className="bg-orange-100 text-orange-800 border-orange-200">
-						Inactive
-					</Badge>
-				);
+				return <Badge variant="inactive">Inactive</Badge>;
 			default:
 				return <Badge variant="secondary">{status}</Badge>;
 		}
@@ -364,9 +371,6 @@ export function CompetitionDetail({ competition }: CompetitionDetailProps) {
 									</h4>
 									<div className="text-sm text-gray-600">
 										<p>Max photos per user: {category.maxPhotosPerUser}</p>
-										<p className="text-xs text-gray-400 mt-2">
-											Created {formatDateTime(category.createdAt)}
-										</p>
 									</div>
 								</div>
 							))}

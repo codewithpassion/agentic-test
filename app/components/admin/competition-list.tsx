@@ -46,21 +46,34 @@ export function CompetitionList({ className }: CompetitionListProps) {
 		offset: currentPage * pageSize,
 	});
 
+	const utils = trpc.useUtils();
+
 	const activateMutation = trpc.competitions.activate.useMutation({
 		onSuccess: () => {
-			refetch();
+			// Invalidate all related queries
+			utils.competitions.list.invalidate();
+			utils.competitions.getActive.invalidate();
+			// Also invalidate any specific competition detail queries
+			utils.competitions.getById.invalidate();
 		},
 	});
 
 	const deactivateMutation = trpc.competitions.deactivate.useMutation({
 		onSuccess: () => {
-			refetch();
+			// Invalidate all related queries
+			utils.competitions.list.invalidate();
+			utils.competitions.getActive.invalidate();
+			// Also invalidate any specific competition detail queries
+			utils.competitions.getById.invalidate();
 		},
 	});
 
 	const deleteMutation = trpc.competitions.delete.useMutation({
 		onSuccess: () => {
-			refetch();
+			// Invalidate all related queries
+			utils.competitions.list.invalidate();
+			utils.competitions.getActive.invalidate();
+			utils.competitions.getById.invalidate();
 		},
 	});
 
@@ -103,25 +116,13 @@ export function CompetitionList({ className }: CompetitionListProps) {
 	const getStatusBadge = (competitionStatus: Competition["status"]) => {
 		switch (competitionStatus) {
 			case "active":
-				return (
-					<Badge className="bg-green-100 text-green-800 border-green-200">
-						Active
-					</Badge>
-				);
+				return <Badge variant="active">Active</Badge>;
 			case "draft":
-				return <Badge variant="secondary">Draft</Badge>;
+				return <Badge variant="draft">Draft</Badge>;
 			case "completed":
-				return (
-					<Badge className="bg-blue-100 text-blue-800 border-blue-200">
-						Completed
-					</Badge>
-				);
+				return <Badge variant="completed">Completed</Badge>;
 			case "inactive":
-				return (
-					<Badge className="bg-orange-100 text-orange-800 border-orange-200">
-						Inactive
-					</Badge>
-				);
+				return <Badge variant="inactive">Inactive</Badge>;
 			default:
 				return <Badge variant="secondary">{competitionStatus}</Badge>;
 		}

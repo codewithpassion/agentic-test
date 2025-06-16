@@ -114,9 +114,28 @@ export function CompetitionForm({ competition, mode }: CompetitionFormProps) {
 			if (draft) {
 				try {
 					const parsedDraft = JSON.parse(draft);
-					reset(parsedDraft);
+					// Only restore if the draft has meaningful content (not just empty values)
+					const hasContent =
+						parsedDraft.title ||
+						parsedDraft.description ||
+						parsedDraft.startDate ||
+						parsedDraft.endDate;
+					if (hasContent) {
+						// Ask user if they want to restore the draft
+						const shouldRestore = confirm(
+							"You have an unsaved draft. Would you like to restore it?",
+						);
+						if (shouldRestore) {
+							reset(parsedDraft);
+						} else {
+							// Clear the draft if user doesn't want it
+							localStorage.removeItem(draftKey);
+						}
+					}
 				} catch (error) {
 					console.error("Failed to restore draft:", error);
+					// Clear corrupted draft
+					localStorage.removeItem(draftKey);
 				}
 			}
 		}
@@ -150,25 +169,13 @@ export function CompetitionForm({ competition, mode }: CompetitionFormProps) {
 	const getStatusBadge = (competitionStatus: string) => {
 		switch (competitionStatus) {
 			case "active":
-				return (
-					<Badge className="bg-green-100 text-green-800 border-green-200">
-						Active
-					</Badge>
-				);
+				return <Badge variant="active">Active</Badge>;
 			case "draft":
-				return <Badge variant="secondary">Draft</Badge>;
+				return <Badge variant="draft">Draft</Badge>;
 			case "completed":
-				return (
-					<Badge className="bg-blue-100 text-blue-800 border-blue-200">
-						Completed
-					</Badge>
-				);
+				return <Badge variant="completed">Completed</Badge>;
 			case "inactive":
-				return (
-					<Badge className="bg-orange-100 text-orange-800 border-orange-200">
-						Inactive
-					</Badge>
-				);
+				return <Badge variant="inactive">Inactive</Badge>;
 			default:
 				return <Badge variant="secondary">{competitionStatus}</Badge>;
 		}
@@ -304,14 +311,34 @@ export function CompetitionForm({ competition, mode }: CompetitionFormProps) {
 						</Button>
 						<div className="flex items-center gap-3">
 							{mode === "create" && (
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setValue("status", "draft")}
-									disabled={isSubmitting}
-								>
-									Save as Draft
-								</Button>
+								<>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => {
+											const draftKey = "competition-draft";
+											localStorage.removeItem(draftKey);
+											reset({
+												title: "",
+												description: "",
+												startDate: "",
+												endDate: "",
+												status: "draft",
+											});
+										}}
+										disabled={isSubmitting}
+									>
+										Clear Form
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => setValue("status", "draft")}
+										disabled={isSubmitting}
+									>
+										Save as Draft
+									</Button>
+								</>
 							)}
 							<Button
 								type="submit"
