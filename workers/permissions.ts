@@ -16,7 +16,10 @@ export function hasPermission(
 	if (!user || !user.roles) return false;
 
 	// Check if any of the user's roles have the required permission.
-	return user.roles.some((role) => {
+	const rolesArray: UserRole[] = Array.isArray(user.roles)
+		? (user.roles as UserRole[])
+		: [user.roles as UserRole];
+	return rolesArray.some((role: UserRole) => {
 		const userPermissions = ROLE_PERMISSIONS[role] || [];
 		return userPermissions.includes(permission);
 	});
@@ -34,8 +37,11 @@ export function hasRole(
 	}
 
 	// Find the highest role level the user has
+	const rolesArray: UserRole[] = Array.isArray(user.roles)
+		? (user.roles as UserRole[])
+		: [user.roles as UserRole];
 	const userLevel = Math.max(
-		...user.roles.map((role) => ROLE_HIERARCHY[role] || 0),
+		...rolesArray.map((role: UserRole) => ROLE_HIERARCHY[role] || 0),
 	);
 	const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
 
@@ -85,8 +91,11 @@ export function getUserPermissions(user: AuthUser | null): Permission[] {
 	if (!user || !user.roles) return [];
 
 	// Collect all unique permissions from all of the user's roles.
-	const allPermissions = user.roles.flatMap(
-		(role) => ROLE_PERMISSIONS[role] || [],
+	const rolesArray: UserRole[] = Array.isArray(user.roles)
+		? (user.roles as UserRole[])
+		: [user.roles as UserRole];
+	const allPermissions = rolesArray.flatMap(
+		(role: UserRole) => ROLE_PERMISSIONS[role] || [],
 	);
 	return [...new Set(allPermissions)]; // Return unique permissions
 }

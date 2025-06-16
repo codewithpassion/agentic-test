@@ -73,8 +73,8 @@ export function useRoleGuard() {
 		switchRole: (components: Partial<Record<UserRole, React.ReactNode>>) => {
 			if (!user || !user.roles) return null;
 			for (const role of user.roles) {
-				if (components[role]) {
-					return components[role];
+				if (components[role as UserRole]) {
+					return components[role as UserRole];
 				}
 			}
 			return null;

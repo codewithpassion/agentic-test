@@ -20,7 +20,7 @@ export async function updateUserRole(
 	return await db
 		.update(user)
 		.set({
-			role: newRole,
+			roles: newRole,
 			updatedAt: new Date(),
 		})
 		.where(eq(user.id, userId))
@@ -31,7 +31,7 @@ export async function updateUserRole(
  * Get users by role
  */
 export async function getUsersByRole(db: DbInstance, role: UserRole) {
-	return await db.select().from(user).where(eq(user.role, role));
+	return await db.select().from(user).where(eq(user.roles, role));
 }
 
 /**
@@ -41,7 +41,7 @@ export async function getAdminUsers(db: DbInstance) {
 	return await db
 		.select()
 		.from(user)
-		.where(sql`${user.role} IN ('admin', 'superadmin')`);
+		.where(sql`${user.roles} IN ('admin', 'superadmin')`);
 }
 
 /**
@@ -50,11 +50,11 @@ export async function getAdminUsers(db: DbInstance) {
 export async function countUsersByRole(db: DbInstance) {
 	return await db
 		.select({
-			role: user.role,
+			role: user.roles,
 			count: sql<number>`cast(count(*) as int)`,
 		})
 		.from(user)
-		.groupBy(user.role);
+		.groupBy(user.roles);
 }
 
 /**

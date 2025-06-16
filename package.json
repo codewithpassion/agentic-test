@@ -10,7 +10,7 @@
 		"dev": "react-router dev",
 		"preview": "bun run build && vite preview",
 		"start": "wrangler dev",
-		"check": "bun cf-typegen && react-router typegen && bun run biome:check",
+		"check": "bun cf-typegen && react-router typegen && bun run biome:check && bunx tsc --noEmit -p ./tsconfig.cloudflare.json",
 		"biome:check": "biome check --fix && biome format --write",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings",
 		"tail:prod": "wrangler tail -e production",

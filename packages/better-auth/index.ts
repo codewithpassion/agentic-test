@@ -3,7 +3,7 @@ import { addCloudflareContextToNodejsGlobal } from "./cloudflare";
 import * as authSchema from "./db/auth-schema";
 import * as authAdminSchema from "./db/auth-schema-admin";
 import { getCloudflareSecondaryStorage } from "./kv-secondary-storage";
-import { AuthCloudflareBindings } from "./types";
+import type { AuthCloudflareBindings } from "./types";
 
 type AppType = {
 	Bindings: AuthCloudflareBindings;
@@ -30,6 +30,6 @@ export {
 	getCloudflareSecondaryStorage,
 	authSchema,
 	authAdminSchema,
-	AuthCloudflareBindings,
+	type AuthCloudflareBindings,
 	dbLoader,
 };

@@ -1,2 +1,3 @@
+bunx tsc --noEmit -p ./tsconfig.cloudflare.json
 bunx biome check --staged --fix --no-errors-on-unmatched
 git update-index --again

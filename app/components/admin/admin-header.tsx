@@ -107,10 +107,16 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 											variant="secondary"
 											className={cn(
 												"text-xs",
-												getRoleBadgeColor(user?.role || "user"),
+												getRoleBadgeColor(
+													Array.isArray(user?.roles) && user?.roles.length > 0
+														? user.roles[0]
+														: "user",
+												),
 											)}
 										>
-											{user?.role || "user"}
+											{Array.isArray(user?.roles) && user?.roles.length > 0
+												? user.roles[0]
+												: "user"}
 										</Badge>
 									</div>
 								</div>
