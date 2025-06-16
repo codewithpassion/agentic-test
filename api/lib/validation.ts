@@ -176,3 +176,21 @@ export type GetPhotosByCompetition = z.infer<
 >;
 export type GetSignedUrl = z.infer<typeof getSignedUrlSchema>;
 export type ConfirmUpload = z.infer<typeof confirmUploadSchema>;
+
+// Batch photo submission schema
+export const batchPhotoSubmissionSchema = z.object({
+	competitionId: z.string().min(1, "Competition ID is required"),
+	photos: z
+		.array(
+			z.object({
+				categoryId: z.string().min(1, "Category ID is required"),
+				...photoMetadataSchema.shape,
+				...fileValidationSchema.shape,
+				filePath: z.string().min(1, "File path is required"),
+			}),
+		)
+		.min(1, "At least one photo is required")
+		.max(10, "Maximum 10 photos per batch"),
+});
+
+export type BatchPhotoSubmission = z.infer<typeof batchPhotoSubmissionSchema>;

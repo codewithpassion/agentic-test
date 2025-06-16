@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { categories, competitions, photos } from "../../database/schema";
 import {
+	batchPhotoSubmissionSchema,
 	getPhotosByCategorySchema,
 	getPhotosByCompetitionSchema,
 	getUserSubmissionsSchema,
@@ -34,6 +35,26 @@ export const photosRouter = router({
 					code: "BAD_REQUEST",
 					message:
 						error instanceof Error ? error.message : "Failed to submit photo",
+				});
+			}
+		}),
+
+	/**
+	 * Submit multiple photos in a batch
+	 */
+	submitBatch: protectedProcedure
+		.input(batchPhotoSubmissionSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				const photoService = new PhotoService(ctx.env.DB);
+				const results = await photoService.submitPhotoBatch(ctx.user.id, input);
+				return results;
+			} catch (error) {
+				console.error("Batch photo submission error:", error);
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						error instanceof Error ? error.message : "Failed to submit photos",
 				});
 			}
 		}),

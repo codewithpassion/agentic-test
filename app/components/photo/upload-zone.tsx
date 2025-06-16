@@ -70,35 +70,6 @@ export function UploadZone({
 		e.stopPropagation();
 	}, []);
 
-	const handleDrop = useCallback(
-		async (e: DragEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
-			setIsDragOver(false);
-
-			if (disabled) return;
-
-			const droppedFiles = Array.from(e.dataTransfer.files);
-			await processFiles(droppedFiles);
-		},
-		[disabled],
-	);
-
-	const handleFileInput = useCallback(
-		async (e: React.ChangeEvent<HTMLInputElement>) => {
-			if (disabled) return;
-
-			const selectedFiles = Array.from(e.target.files || []);
-			await processFiles(selectedFiles);
-
-			// Clear the input so the same file can be selected again
-			if (fileInputRef.current) {
-				fileInputRef.current.value = "";
-			}
-		},
-		[disabled],
-	);
-
 	const processFiles = useCallback(
 		async (files: File[]) => {
 			// Limit number of files
@@ -120,11 +91,64 @@ export function UploadZone({
 		[maxFiles, rules, onFilesSelected],
 	);
 
-	const handleClick = useCallback(() => {
-		if (!disabled && fileInputRef.current) {
-			fileInputRef.current.click();
-		}
-	}, [disabled]);
+	const handleDrop = useCallback(
+		async (e: DragEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			setIsDragOver(false);
+
+			if (disabled) return;
+
+			const droppedFiles = Array.from(e.dataTransfer.files);
+			await processFiles(droppedFiles);
+		},
+		[disabled, processFiles],
+	);
+
+	const handleFileInput = useCallback(
+		async (e: React.ChangeEvent<HTMLInputElement>) => {
+			console.log("File input changed", {
+				disabled,
+				filesCount: e.target.files?.length,
+			});
+			if (disabled) return;
+
+			const selectedFiles = Array.from(e.target.files || []);
+			console.log(
+				"Selected files:",
+				selectedFiles.map((f) => f.name),
+			);
+			await processFiles(selectedFiles);
+
+			// Clear the input so the same file can be selected again
+			if (fileInputRef.current) {
+				fileInputRef.current.value = "";
+			}
+		},
+		[disabled, processFiles],
+	);
+
+	const handleClick = useCallback(
+		(e: React.MouseEvent) => {
+			console.log("Upload zone clicked", {
+				disabled,
+				hasRef: !!fileInputRef.current,
+			});
+			e.preventDefault();
+			e.stopPropagation();
+
+			if (!disabled && fileInputRef.current) {
+				console.log("Triggering file input click");
+				fileInputRef.current.click();
+			} else {
+				console.log("Click blocked", {
+					disabled,
+					hasRef: !!fileInputRef.current,
+				});
+			}
+		},
+		[disabled],
+	);
 
 	const hasErrors = Object.keys(validationErrors).length > 0;
 
@@ -159,6 +183,7 @@ export function UploadZone({
 					accept={acceptedTypes.join(",")}
 					onChange={handleFileInput}
 					disabled={disabled}
+					tabIndex={-1}
 				/>
 
 				<div className="flex flex-col items-center space-y-4">

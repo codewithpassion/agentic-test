@@ -588,4 +588,100 @@ export class PhotoService {
 
 		return { photos: photoList, total };
 	}
+
+	/**
+	 * Submit multiple photos in a batch
+	 */
+	async submitPhotoBatch(
+		userId: string,
+		batchData: {
+			competitionId: string;
+			photos: Array<
+				Omit<
+					NewPhoto,
+					"id" | "userId" | "createdAt" | "updatedAt" | "competitionId"
+				>
+			>;
+		},
+	): Promise<{
+		success: Photo[];
+		errors: Array<{ index: number; error: string; photo?: unknown }>;
+	}> {
+		const results: Photo[] = [];
+		const errors: Array<{ index: number; error: string; photo?: unknown }> = [];
+
+		// Process each photo
+		for (let i = 0; i < batchData.photos.length; i++) {
+			const photoData = batchData.photos[i];
+			try {
+				// Check submission limits for this category
+				await this.checkSubmissionLimits(
+					userId,
+					batchData.competitionId,
+					photoData.categoryId,
+				);
+
+				// Check for duplicate submissions (same title in same category)
+				const existingPhoto = await this.db
+					.select()
+					.from(photos)
+					.where(
+						and(
+							eq(photos.userId, userId),
+							eq(photos.competitionId, batchData.competitionId),
+							eq(photos.categoryId, photoData.categoryId),
+							eq(photos.title, photoData.title),
+							sql`${photos.status} != 'deleted'`,
+						),
+					)
+					.get();
+
+				if (existingPhoto) {
+					errors.push({
+						index: i,
+						error: "A photo with this title already exists in this category",
+						photo: photoData,
+					});
+					continue;
+				}
+
+				const photoId = generateId();
+				const newPhoto: NewPhoto = {
+					id: photoId,
+					userId,
+					competitionId: batchData.competitionId,
+					...photoData,
+					status: "pending",
+					createdAt: new Date(),
+					updatedAt: new Date(),
+				};
+
+				await this.db.insert(photos).values(newPhoto);
+
+				const photo = await this.getPhotoById(photoId);
+				if (!photo) {
+					errors.push({
+						index: i,
+						error: "Failed to create photo",
+						photo: photoData,
+					});
+					continue;
+				}
+
+				results.push(photo);
+			} catch (error) {
+				console.error(`Error submitting photo ${i}:`, error);
+				errors.push({
+					index: i,
+					error: error instanceof Error ? error.message : "Unknown error",
+					photo: photoData,
+				});
+			}
+		}
+
+		return {
+			success: results,
+			errors,
+		};
+	}
 }

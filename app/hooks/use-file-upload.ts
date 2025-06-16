@@ -68,36 +68,6 @@ export function useFileUpload({
 		return `file-${Date.now()}-${++uploadId.current}`;
 	}, []);
 
-	// Add files to the upload queue
-	const addFiles = useCallback(
-		async (newFiles: File[]) => {
-			// Limit number of files
-			const currentCount = files.length;
-			const availableSlots = maxFiles - currentCount;
-			const filesToAdd = newFiles.slice(0, availableSlots);
-
-			const fileStates: FileUploadState[] = filesToAdd.map((file) => ({
-				id: generateFileId(),
-				file,
-				status: "pending",
-				progress: 0,
-			}));
-
-			setFiles((prev) => [...prev, ...fileStates]);
-
-			// Validate files
-			for (const fileState of fileStates) {
-				await validateAndPrepareFile(fileState.id);
-			}
-
-			// Auto-upload if enabled
-			if (autoUpload) {
-				startUpload();
-			}
-		},
-		[files.length, maxFiles, generateFileId, autoUpload],
-	);
-
 	// Validate and prepare a single file
 	const validateAndPrepareFile = useCallback(
 		async (fileId: string) => {
@@ -164,22 +134,6 @@ export function useFileUpload({
 		},
 		[files, rules, compressionEnabled],
 	);
-
-	// Remove file from upload queue
-	const removeFile = useCallback((fileId: string) => {
-		// Cancel upload if in progress
-		uploadManager.cancelUpload(fileId);
-
-		setFiles((prev) => prev.filter((f) => f.id !== fileId));
-	}, []);
-
-	// Clear all files
-	const clearFiles = useCallback(() => {
-		// Cancel all uploads
-		uploadManager.cancelAllUploads();
-		setFiles([]);
-		setIsUploading(false);
-	}, []);
 
 	// Start upload process
 	const startUpload = useCallback(async () => {
@@ -306,6 +260,59 @@ export function useFileUpload({
 		confirmUploadMutation,
 		onUploadComplete,
 	]);
+
+	// Add files to the upload queue
+	const addFiles = useCallback(
+		async (newFiles: File[]) => {
+			// Limit number of files
+			const currentCount = files.length;
+			const availableSlots = maxFiles - currentCount;
+			const filesToAdd = newFiles.slice(0, availableSlots);
+
+			const fileStates: FileUploadState[] = filesToAdd.map((file) => ({
+				id: generateFileId(),
+				file,
+				status: "pending",
+				progress: 0,
+			}));
+
+			setFiles((prev) => [...prev, ...fileStates]);
+
+			// Validate files
+			for (const fileState of fileStates) {
+				await validateAndPrepareFile(fileState.id);
+			}
+
+			// Auto-upload if enabled
+			if (autoUpload) {
+				startUpload();
+			}
+		},
+		[
+			files.length,
+			maxFiles,
+			generateFileId,
+			autoUpload,
+			validateAndPrepareFile,
+			startUpload,
+		],
+	);
+
+	// Remove file from upload queue
+	const removeFile = useCallback((fileId: string) => {
+		// Cancel upload if in progress
+		uploadManager.cancelUpload(fileId);
+
+		setFiles((prev) => prev.filter((f) => f.id !== fileId));
+	}, []);
+
+	// Clear all files
+	const clearFiles = useCallback(() => {
+		// Cancel all uploads
+		uploadManager.cancelAllUploads();
+		setFiles([]);
+		setIsUploading(false);
+	}, []);
 
 	// Retry failed upload
 	const retryUpload = useCallback(
