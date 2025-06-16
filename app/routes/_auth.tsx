@@ -33,10 +33,8 @@ export default function Protected() {
 	const user: AuthUser | undefined = session?.user || undefined;
 
 	return (
-		<>
-			<AuthProvider user={user}>
-				<Outlet />
-			</AuthProvider>
-		</>
+		<AuthProvider user={user}>
+			<Outlet />
+		</AuthProvider>
 	);
 }

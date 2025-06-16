@@ -1,6 +1,7 @@
 import { router } from "./router";
 import { categoriesRouter } from "./routers/categories";
 import { competitionsRouter } from "./routers/competitions";
+import { dashboardRouter } from "./routers/dashboard";
 // Import other routers as they're created
 // import { photosRouter } from "./routers/photos";
 // import { votesRouter } from "./routers/votes";
@@ -11,6 +12,7 @@ import { competitionsRouter } from "./routers/competitions";
 export const appRouter = router({
 	competitions: competitionsRouter,
 	categories: categoriesRouter,
+	dashboard: dashboardRouter,
 	// Add other routers as they're created
 	// photos: photosRouter,
 	// votes: votesRouter,

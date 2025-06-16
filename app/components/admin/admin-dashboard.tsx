@@ -1,81 +1,63 @@
-import {
-	AlertTriangle,
-	CheckCircle,
-	Clock,
-	Flag,
-	Image,
-	TrendingUp,
-	Trophy,
-	Users,
-} from "lucide-react";
+import { Clock, Flag, Image, Trophy, Users } from "lucide-react";
 import { Link } from "react-router";
+import type { Competition } from "~/../../api/database/schema";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
+import { useDashboard } from "~/hooks/use-dashboard";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 
 export function AdminDashboard() {
-	// These will be implemented when tRPC procedures are available
-	// For now, we'll use mock data or handle loading states
-	const competitionsQuery: {
-		data: Array<{
-			id: string;
-			title: string;
-			status: string;
-			createdAt: string;
-		}> | null;
-		isLoading: boolean;
-		error: unknown;
-	} = {
-		data: null,
-		isLoading: false,
-		error: null,
-	};
+	const { useOverview } = useDashboard();
+	const competitionsQuery = trpc.competitions.list.useQuery({});
+	const overviewQuery = useOverview();
 
-	const statsQuery: {
-		data: {
-			activeCompetitions?: number;
-			pendingPhotos?: number;
-			totalPhotos?: number;
-			openReports?: number;
-		} | null;
-		isLoading: boolean;
-		error: unknown;
-	} = {
-		data: null,
-		isLoading: false,
-		error: null,
-	};
+	const isLoading = competitionsQuery.isLoading || overviewQuery.isLoading;
+	const error = competitionsQuery.error || overviewQuery.error;
 
-	const isLoading = competitionsQuery.isLoading || statsQuery.isLoading;
+	if (error) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<div className="text-center">
+					<p className="text-red-600">Failed to load dashboard data</p>
+					<p className="text-sm text-gray-500 mt-1">{error.message}</p>
+				</div>
+			</div>
+		);
+	}
+
+	const metrics = overviewQuery.data;
+	const activeCompetitionsCount =
+		competitionsQuery.data?.filter((c: Competition) => c.status === "active")
+			.length || 0;
 
 	const quickStats = [
 		{
 			title: "Active Competitions",
-			value: statsQuery.data?.activeCompetitions || 0,
+			value: activeCompetitionsCount,
 			icon: Trophy,
 			color: "text-blue-600",
 			bgColor: "bg-blue-50",
 		},
 		{
 			title: "Pending Photos",
-			value: statsQuery.data?.pendingPhotos || 0,
+			value: metrics?.pending.photos || 0,
 			icon: Clock,
 			color: "text-orange-600",
 			bgColor: "bg-orange-50",
 		},
 		{
-			title: "Total Submissions",
-			value: statsQuery.data?.totalPhotos || 0,
+			title: "Today's Photos",
+			value: metrics?.today.newPhotos || 0,
 			icon: Image,
 			color: "text-green-600",
 			bgColor: "bg-green-50",
 		},
 		{
 			title: "Open Reports",
-			value: statsQuery.data?.openReports || 0,
+			value: metrics?.pending.reports || 0,
 			icon: Flag,
 			color: "text-red-600",
 			bgColor: "bg-red-50",
@@ -124,14 +106,66 @@ export function AdminDashboard() {
 	return (
 		<div className="space-y-6">
 			{/* Welcome message */}
-			<div>
-				<h1 className="text-2xl font-bold text-gray-900">
-					Welcome to Admin Dashboard
-				</h1>
-				<p className="text-gray-600">
-					Manage your photo competitions and moderate content.
-				</p>
+			<div className="flex justify-between items-center">
+				<div>
+					<h1 className="text-2xl font-bold text-gray-900">
+						Welcome to Admin Dashboard
+					</h1>
+					<p className="text-gray-600">
+						Manage your photo competitions and moderate content.
+					</p>
+				</div>
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={() => overviewQuery.refetch()}
+					disabled={overviewQuery.isRefetching}
+				>
+					{overviewQuery.isRefetching ? "Refreshing..." : "Refresh"}
+				</Button>
 			</div>
+
+			{/* Active Competition Overview */}
+			{metrics?.activeCompetition && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Active Competition</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+							<div>
+								<h3 className="font-semibold text-lg">
+									{metrics.activeCompetition.title}
+								</h3>
+								<p className="text-sm text-gray-600">
+									{metrics.activeCompetition.daysRemaining} days remaining
+								</p>
+							</div>
+							<div className="text-center">
+								<div className="text-2xl font-bold">
+									{metrics.activeCompetition.totalPhotos}
+								</div>
+								<div className="text-sm text-gray-600">Total Photos</div>
+							</div>
+							<div className="text-center">
+								<div className="text-2xl font-bold">
+									{metrics.activeCompetition.totalVotes}
+								</div>
+								<div className="text-sm text-gray-600">Total Votes</div>
+							</div>
+							<div className="text-center">
+								<Button asChild>
+									<Link
+										to={`/admin/competitions/${metrics.activeCompetition.id}`}
+									>
+										Manage Competition
+									</Link>
+								</Button>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Quick stats */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -208,28 +242,30 @@ export function AdminDashboard() {
 					<CardContent>
 						{competitionsQuery.data && competitionsQuery.data.length > 0 ? (
 							<div className="space-y-3">
-								{competitionsQuery.data.slice(0, 5).map((competition) => (
-									<div
-										key={competition.id}
-										className="flex items-center justify-between p-3 border rounded-lg"
-									>
-										<div>
-											<h4 className="font-medium">{competition.title}</h4>
-											<p className="text-sm text-gray-500">
-												{new Date(competition.createdAt).toLocaleDateString()}
-											</p>
-										</div>
-										<Badge
-											variant={
-												competition.status === "active"
-													? "default"
-													: "secondary"
-											}
+								{competitionsQuery.data
+									.slice(0, 5)
+									.map((competition: Competition) => (
+										<div
+											key={competition.id}
+											className="flex items-center justify-between p-3 border rounded-lg"
 										>
-											{competition.status}
-										</Badge>
-									</div>
-								))}
+											<div>
+												<h4 className="font-medium">{competition.title}</h4>
+												<p className="text-sm text-gray-500">
+													{new Date(competition.createdAt).toLocaleDateString()}
+												</p>
+											</div>
+											<Badge
+												variant={
+													competition.status === "active"
+														? "default"
+														: "secondary"
+												}
+											>
+												{competition.status}
+											</Badge>
+										</div>
+									))}
 							</div>
 						) : (
 							<div className="text-center py-6 text-gray-500">
@@ -251,28 +287,39 @@ export function AdminDashboard() {
 						<CardTitle>System Status</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="space-y-3">
-							<div className="flex items-center justify-between">
-								<span className="text-sm">Database Connection</span>
-								<div className="flex items-center gap-2">
-									<CheckCircle className="h-4 w-4 text-green-500" />
-									<span className="text-sm text-green-600">Connected</span>
+						<div className="space-y-4">
+							<div className="grid grid-cols-2 gap-4">
+								<div className="text-center">
+									<div className="text-xl font-bold">
+										{metrics?.users.total || 0}
+									</div>
+									<div className="text-sm text-gray-600">Total Users</div>
+								</div>
+								<div className="text-center">
+									<div className="text-xl font-bold">
+										{metrics?.users.admins || 0}
+									</div>
+									<div className="text-sm text-gray-600">Admins</div>
 								</div>
 							</div>
 
-							<div className="flex items-center justify-between">
-								<span className="text-sm">File Storage</span>
-								<div className="flex items-center gap-2">
-									<CheckCircle className="h-4 w-4 text-green-500" />
-									<span className="text-sm text-green-600">Available</span>
+							<div className="space-y-3 pt-4 border-t">
+								<div className="flex items-center justify-between">
+									<span className="text-sm">Today's Activity</span>
 								</div>
-							</div>
-
-							<div className="flex items-center justify-between">
-								<span className="text-sm">Email Service</span>
-								<div className="flex items-center gap-2">
-									<AlertTriangle className="h-4 w-4 text-orange-500" />
-									<span className="text-sm text-orange-600">Pending Setup</span>
+								<div className="grid grid-cols-2 gap-2 text-sm">
+									<div className="flex justify-between">
+										<span>New Users:</span>
+										<span className="font-semibold">
+											{metrics?.today.newUsers || 0}
+										</span>
+									</div>
+									<div className="flex justify-between">
+										<span>Votes Cast:</span>
+										<span className="font-semibold">
+											{metrics?.today.totalVotes || 0}
+										</span>
+									</div>
 								</div>
 							</div>
 						</div>
