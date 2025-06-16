@@ -7,6 +7,7 @@ import type { Competition } from "~/../../api/database/schema";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { DatePicker } from "~/components/ui/date-picker";
 import { Input } from "~/components/ui/input";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
@@ -236,45 +237,24 @@ export function CompetitionForm({ competition, mode }: CompetitionFormProps) {
 
 					{/* Dates */}
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label
-								htmlFor="startDate"
-								className="block text-sm font-medium text-gray-700 mb-1"
-							>
-								Start Date
-							</label>
-							<Input
-								id="startDate"
-								type="date"
-								{...register("startDate")}
-								className={errors.startDate ? "border-red-500" : ""}
-							/>
-							{errors.startDate && (
-								<p className="text-red-500 text-sm mt-1">
-									{errors.startDate.message}
-								</p>
-							)}
-						</div>
+						<DatePicker
+							id="startDate"
+							label="Start Date"
+							value={watch("startDate")}
+							onChange={(value) => setValue("startDate", value)}
+							error={errors.startDate?.message}
+							placeholder="Select start date"
+						/>
 
-						<div>
-							<label
-								htmlFor="endDate"
-								className="block text-sm font-medium text-gray-700 mb-1"
-							>
-								End Date
-							</label>
-							<Input
-								id="endDate"
-								type="date"
-								{...register("endDate")}
-								className={errors.endDate ? "border-red-500" : ""}
-							/>
-							{errors.endDate && (
-								<p className="text-red-500 text-sm mt-1">
-									{errors.endDate.message}
-								</p>
-							)}
-						</div>
+						<DatePicker
+							id="endDate"
+							label="End Date"
+							value={watch("endDate")}
+							onChange={(value) => setValue("endDate", value)}
+							error={errors.endDate?.message}
+							placeholder="Select end date"
+							minDate={watch("startDate") || undefined}
+						/>
 					</div>
 
 					{/* Status */}
