@@ -15,6 +15,13 @@
 			"when": 1749707483660,
 			"tag": "0001_futuristic_payback",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1750047455310,
+			"tag": "0002_living_lucky_pierre",
+			"breakpoints": true
 		}
 	]
 }

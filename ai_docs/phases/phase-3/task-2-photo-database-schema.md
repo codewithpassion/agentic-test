@@ -4,61 +4,35 @@
 Create database schema for photo submissions and implement tRPC API endpoints for photo management.
 
 ## Requirements
-- Design photo submissions table schema
-- Create database migrations
+- Update photo submissions table schema in Drizzle
+- Generate database migrations automatically
 - Implement tRPC photo procedures
 - Add photo validation logic
 - Set up submission limits enforcement
 
-## Database Schema
+## Database Schema Updates
 
-### Photos Table
-```sql
-CREATE TABLE photos (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  competition_id TEXT NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
-  category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-  
-  -- File information
-  file_path TEXT NOT NULL,
-  file_name TEXT NOT NULL,
-  file_size INTEGER NOT NULL,
-  mime_type TEXT NOT NULL,
-  
-  -- Photo metadata
-  title TEXT NOT NULL,
-  description TEXT NOT NULL,
-  date_taken DATE,
-  location TEXT NOT NULL,
-  
-  -- Optional camera info
-  camera_make TEXT,
-  camera_model TEXT,
-  lens TEXT,
-  focal_length TEXT,
-  aperture TEXT,
-  shutter_speed TEXT,
-  iso TEXT,
-  
-  -- Status and timestamps
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'deleted')),
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+### Photos Table (Drizzle Schema)
+Update the existing photos table in `api/database/schema.ts` to include:
 
--- Indexes
-CREATE INDEX idx_photos_user_id ON photos(user_id);
-CREATE INDEX idx_photos_competition_id ON photos(competition_id);
-CREATE INDEX idx_photos_category_id ON photos(category_id);
-CREATE INDEX idx_photos_status ON photos(status);
-CREATE INDEX idx_photos_created_at ON photos(created_at);
+**New Fields:**
+- `competitionId` - foreign key to competitions table
+- `mimeType` - file MIME type (image/jpeg, image/png)
+- Expanded camera info fields: `cameraMake`, `cameraModel`, `lens`, `focalLength`, `aperture`, `shutterSpeed`, `iso`
+- Add "deleted" to status enum for soft delete
 
--- Unique constraint to prevent duplicate submissions
-CREATE UNIQUE INDEX idx_photos_user_competition_category_title 
-ON photos(user_id, competition_id, category_id, title) 
-WHERE status != 'deleted';
-```
+**Indexes:**
+- userId, competitionId, categoryId, status, createdAt for performance
+- Unique constraint on (userId, competitionId, categoryId, title) where status != 'deleted'
+
+**Field Requirements:**
+- File types: JPEG, PNG only  
+- File size: Max 10MB
+- Image dimensions: Minimum 800x600
+- Title: 3-100 characters, required
+- Description: 20-500 characters, required
+- Date taken: Valid date, not in future
+- Location: 2-100 characters, required
 
 ## tRPC API Endpoints
 
@@ -97,19 +71,19 @@ upload.deleteFile         // Delete file from R2
 
 ## Implementation Steps
 
-1. **Create Database Migration**
-   - Add photos table with all fields
-   - Create appropriate indexes
-   - Add foreign key constraints
+1. **Update Drizzle Schema**
+   - Modify photos table in `api/database/schema.ts`
+   - Add missing fields and proper constraints
+   - Add indexes for performance
 
-2. **Update Schema Types**
-   - Add Photo type to database schema
-   - Update TypeScript types
+2. **Generate Migration**
+   - Run `bun db:gen` to generate migration
+   - Apply with `bun db:update`
 
 3. **Implement tRPC Procedures**
-   - Create photo router
-   - Implement all CRUD operations
-   - Add proper authorization
+   - Create photo router with CRUD operations
+   - Create upload router for file handling
+   - Add proper authorization and validation
 
 4. **Add Validation Layer**
    - Create Zod schemas for photo validation
@@ -122,7 +96,6 @@ upload.deleteFile         // Delete file from R2
    - Validation service for rules
 
 ## Files to Create
-- `api/database/migrations/003_photos.sql`
 - `api/trpc/routers/photos.ts`
 - `api/trpc/routers/upload.ts`
 - `api/services/photo-service.ts`
@@ -130,8 +103,8 @@ upload.deleteFile         // Delete file from R2
 - `api/lib/validation.ts`
 
 ## Files to Modify
-- `api/database/schema.ts` - Add Photo type
-- `api/trpc/root.ts` - Add photo and upload routers
+- `api/database/schema.ts` - Update photos table schema
+- `api/trpc/index.ts` - Add photo and upload routers
 
 ## Acceptance Criteria
 - [ ] Photos table created with proper schema

@@ -1,10 +1,11 @@
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+	index,
 	integer,
 	sqliteTable,
 	text,
-	uniqueIndex,
+	unique,
 } from "drizzle-orm/sqlite-core";
 
 // Import the user table from better-auth schema
@@ -45,48 +46,84 @@ export const categories = sqliteTable(
 			.notNull()
 			.default(sql`(unixepoch())`),
 	},
-	(table) => ({
-		uniqueNamePerCompetition: uniqueIndex(
-			"unique_category_name_per_competition",
-		).on(table.competitionId, table.name),
-	}),
+	(t) => [
+		unique("unique_category_name_per_competition").on(t.competitionId, t.name),
+	],
 );
 
 // Photos table
-export const photos = sqliteTable("photos", {
-	id: text("id").primaryKey(),
-	userId: text("user_id")
-		.notNull()
-		.references(() => user.id, { onDelete: "cascade" }),
-	categoryId: text("category_id")
-		.notNull()
-		.references(() => categories.id, { onDelete: "cascade" }),
-	title: text("title").notNull(),
-	description: text("description").notNull(),
-	dateTaken: integer("date_taken", { mode: "timestamp" }).notNull(),
-	location: text("location").notNull(),
-	cameraInfo: text("camera_info"),
-	settings: text("settings"),
-	filePath: text("file_path").notNull(),
-	fileName: text("file_name").notNull(),
-	fileSize: integer("file_size").notNull(),
-	width: integer("width").notNull(),
-	height: integer("height").notNull(),
-	status: text("status", {
-		enum: ["pending", "approved", "rejected", "flagged"],
-	})
-		.notNull()
-		.default("pending"),
-	moderatedBy: text("moderated_by").references(() => user.id),
-	moderatedAt: integer("moderated_at", { mode: "timestamp" }),
-	rejectionReason: text("rejection_reason"),
-	createdAt: integer("created_at", { mode: "timestamp" })
-		.notNull()
-		.default(sql`(unixepoch())`),
-	updatedAt: integer("updated_at", { mode: "timestamp" })
-		.notNull()
-		.default(sql`(unixepoch())`),
-});
+export const photos = sqliteTable(
+	"photos",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		competitionId: text("competition_id")
+			.notNull()
+			.references(() => competitions.id, { onDelete: "cascade" }),
+		categoryId: text("category_id")
+			.notNull()
+			.references(() => categories.id, { onDelete: "cascade" }),
+
+		// Photo metadata
+		title: text("title").notNull(),
+		description: text("description").notNull(),
+		dateTaken: integer("date_taken", { mode: "timestamp" }),
+		location: text("location").notNull(),
+
+		// File information
+		filePath: text("file_path").notNull(),
+		fileName: text("file_name").notNull(),
+		fileSize: integer("file_size").notNull(),
+		mimeType: text("mime_type").notNull(),
+		width: integer("width").notNull(),
+		height: integer("height").notNull(),
+
+		// Camera information (optional)
+		cameraMake: text("camera_make"),
+		cameraModel: text("camera_model"),
+		lens: text("lens"),
+		focalLength: text("focal_length"),
+		aperture: text("aperture"),
+		shutterSpeed: text("shutter_speed"),
+		iso: text("iso"),
+
+		// Status and moderation
+		status: text("status", {
+			enum: ["pending", "approved", "rejected", "deleted"],
+		})
+			.notNull()
+			.default("pending"),
+		moderatedBy: text("moderated_by").references(() => user.id),
+		moderatedAt: integer("moderated_at", { mode: "timestamp" }),
+		rejectionReason: text("rejection_reason"),
+
+		// Timestamps
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(t) => [
+		// Indexes for performance
+		index("idx_photos_user_id").on(t.userId),
+		index("idx_photos_competition_id").on(t.competitionId),
+		index("idx_photos_category_id").on(t.categoryId),
+		index("idx_photos_status").on(t.status),
+		index("idx_photos_created_at").on(t.createdAt),
+
+		// Unique constraint to prevent duplicate submissions
+		unique("unique_photo_submission").on(
+			t.userId,
+			t.competitionId,
+			t.categoryId,
+			t.title,
+		),
+	],
+);
 
 // Votes table
 export const votes = sqliteTable(
@@ -103,12 +140,7 @@ export const votes = sqliteTable(
 			.notNull()
 			.default(sql`(unixepoch())`),
 	},
-	(table) => ({
-		uniqueVotePerUser: uniqueIndex("unique_vote_per_user").on(
-			table.userId,
-			table.photoId,
-		),
-	}),
+	(t) => [unique("unique_vote_per_user").on(t.userId, t.photoId)],
 );
 
 // Reports table
@@ -166,17 +198,13 @@ export const winners = sqliteTable(
 			.notNull()
 			.default(sql`(unixepoch())`),
 	},
-	(table) => ({
-		uniquePlacePerCategory: uniqueIndex("unique_place_per_category").on(
-			table.categoryId,
-			table.place,
-		),
-	}),
+	(t) => [unique("unique_place_per_category").on(t.categoryId, t.place)],
 );
 
 // Relations
 export const competitionsRelations = relations(competitions, ({ many }) => ({
 	categories: many(categories),
+	photos: many(photos),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -192,6 +220,10 @@ export const photosRelations = relations(photos, ({ one, many }) => ({
 	user: one(user, {
 		fields: [photos.userId],
 		references: [user.id],
+	}),
+	competition: one(competitions, {
+		fields: [photos.competitionId],
+		references: [competitions.id],
 	}),
 	category: one(categories, {
 		fields: [photos.categoryId],
