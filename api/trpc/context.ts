@@ -1,5 +1,5 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import type { AuthUser } from "../../packages/better-auth/types";
+import type { AuthUser } from "~/types/auth";
 import { getAuthUser } from "../../workers/auth-utils";
 import { createDb } from "../database/db";
 
@@ -7,6 +7,7 @@ export interface Context {
 	db: ReturnType<typeof createDb>;
 	user: AuthUser | null;
 	request: Request;
+	env: CloudflareBindings;
 }
 
 export async function createContext({
@@ -22,6 +23,7 @@ export async function createContext({
 		db,
 		user,
 		request: req,
+		env,
 	};
 }
 

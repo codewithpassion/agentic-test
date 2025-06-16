@@ -30,6 +30,13 @@
 			"binding": "SESSIONS",
 			"id": "c2f40294d32e4a7f80fa41d36a9a8754"
 		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "PHOTO_STORAGE",
+			"bucket_name": "photo-gallery-storage",
+			"preview_bucket_name": "photo-gallery-storage-dev"
+		}
 	]
 	/**
 	 * Smart Placement

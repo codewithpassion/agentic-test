@@ -3,3 +3,10 @@ BETTER_AUTH_SECRET=your_secret_key_here
 
 # Email Service (Resend)
 RESEND_API_KEY=re_your_api_key_here
+
+# R2 Storage Configuration
+# Note: R2 access is typically handled through wrangler.jsonc bindings
+# These variables are only needed if you need direct R2 API access
+# R2_ACCOUNT_ID=your_cloudflare_account_id
+# R2_ACCESS_KEY_ID=your_r2_access_key_id  
+# R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
