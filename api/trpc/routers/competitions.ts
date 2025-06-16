@@ -1,14 +1,15 @@
 import { TRPCError } from "@trpc/server";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { isAdmin } from "../../../workers/permissions";
-import { categories, competitions } from "../../database/schema";
+import { categories, competitions, photos } from "../../database/schema";
 import {
 	competitionStatusSchema,
 	createCompetitionSchema,
 } from "../../database/validations";
 import {
 	competitionManagerProcedure,
+	protectedProcedure,
 	publicProcedure,
 	router,
 } from "../router";
@@ -97,6 +98,145 @@ export const competitionsRouter = router({
 			.where(eq(competitions.status, "active"))
 			.get();
 	}),
+
+	getActiveWithStats: protectedProcedure.query(async ({ ctx }) => {
+		const { db, user } = ctx;
+
+		// Get all active competitions with stats
+		const competitionsWithStats = await db
+			.select({
+				id: competitions.id,
+				title: competitions.title,
+				description: competitions.description,
+				startDate: competitions.startDate,
+				endDate: competitions.endDate,
+				status: competitions.status,
+				createdAt: competitions.createdAt,
+				updatedAt: competitions.updatedAt,
+				// Count categories for each competition
+				categoryCount: sql<number>`(
+					SELECT COUNT(*) 
+					FROM ${categories} 
+					WHERE ${categories.competitionId} = ${competitions.id}
+				)`.as("categoryCount"),
+				// Count user's submissions for each competition
+				userSubmissionCount: sql<number>`(
+					SELECT COUNT(*) 
+					FROM ${photos} 
+					WHERE ${photos.competitionId} = ${competitions.id} 
+					AND ${photos.userId} = ${user.id}
+					AND ${photos.status} != 'deleted'
+				)`.as("userSubmissionCount"),
+				// Count total submissions for each competition
+				totalSubmissions: sql<number>`(
+					SELECT COUNT(*) 
+					FROM ${photos} 
+					WHERE ${photos.competitionId} = ${competitions.id}
+					AND ${photos.status} != 'deleted'
+				)`.as("totalSubmissions"),
+			})
+			.from(competitions)
+			.where(eq(competitions.status, "active"))
+			.orderBy(competitions.endDate, competitions.createdAt);
+
+		// Calculate days remaining for each competition
+		const competitionsWithDays = competitionsWithStats.map((comp) => {
+			let daysRemaining: number | null = null;
+
+			if (comp.endDate) {
+				const now = new Date();
+				const end = new Date(comp.endDate);
+				const diffTime = end.getTime() - now.getTime();
+				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+				daysRemaining = Math.max(0, diffDays);
+			}
+
+			return {
+				...comp,
+				daysRemaining,
+			};
+		});
+
+		return competitionsWithDays;
+	}),
+
+	getCategoriesWithStats: protectedProcedure
+		.input(z.object({ competitionId: z.string().uuid() }))
+		.query(async ({ ctx, input }) => {
+			const { db, user } = ctx;
+			const { competitionId } = input;
+
+			// Get competition details
+			const competition = await db
+				.select()
+				.from(competitions)
+				.where(eq(competitions.id, competitionId))
+				.get();
+
+			if (!competition) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Competition not found",
+				});
+			}
+
+			// Check if competition is active
+			if (competition.status !== "active") {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Competition is not accepting submissions",
+				});
+			}
+
+			// Get categories with submission stats
+			const categoriesWithStats = await db
+				.select({
+					id: categories.id,
+					name: categories.name,
+					competitionId: categories.competitionId,
+					maxPhotosPerUser: categories.maxPhotosPerUser,
+					createdAt: categories.createdAt,
+					updatedAt: categories.updatedAt,
+					// Count user's submissions for each category
+					userSubmissionCount: sql<number>`(
+						SELECT COUNT(*) 
+						FROM ${photos} 
+						WHERE ${photos.categoryId} = ${categories.id} 
+						AND ${photos.userId} = ${user.id}
+						AND ${photos.status} != 'deleted'
+					)`.as("userSubmissionCount"),
+					// Count total submissions for each category
+					totalSubmissions: sql<number>`(
+						SELECT COUNT(*) 
+						FROM ${photos} 
+						WHERE ${photos.categoryId} = ${categories.id}
+						AND ${photos.status} != 'deleted'
+					)`.as("totalSubmissions"),
+				})
+				.from(categories)
+				.where(eq(categories.competitionId, competitionId))
+				.orderBy(categories.createdAt);
+
+			// Calculate derived stats for each category
+			const categoriesWithDerivedStats = categoriesWithStats.map((cat) => {
+				const remainingSlots = Math.max(
+					0,
+					cat.maxPhotosPerUser - cat.userSubmissionCount,
+				);
+				const canSubmit = remainingSlots > 0 && competition.status === "active";
+
+				return {
+					...cat,
+					canSubmit,
+					remainingSlots,
+				};
+			});
+
+			return {
+				competition,
+				categories: categoriesWithDerivedStats,
+			};
+		}),
 
 	// Admin procedures
 	create: competitionManagerProcedure

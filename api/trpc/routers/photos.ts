@@ -1,5 +1,7 @@
 import { TRPCError } from "@trpc/server";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
+import { categories, competitions, photos } from "../../database/schema";
 import {
 	getPhotosByCategorySchema,
 	getPhotosByCompetitionSchema,
@@ -227,5 +229,94 @@ export const photosRouter = router({
 						error instanceof Error ? error.message : "Failed to moderate photo",
 				});
 			}
+		}),
+
+	/**
+	 * Get submission context (competition + category + remaining slots)
+	 */
+	getSubmissionContext: protectedProcedure
+		.input(
+			z.object({
+				competitionId: z.string().uuid(),
+				categoryId: z.string().uuid(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, user } = ctx;
+			const { competitionId, categoryId } = input;
+
+			// Get competition details
+			const competition = await db
+				.select()
+				.from(competitions)
+				.where(eq(competitions.id, competitionId))
+				.get();
+
+			if (!competition) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Competition not found",
+				});
+			}
+
+			// Check if competition is active
+			if (competition.status !== "active") {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Competition is not accepting submissions",
+				});
+			}
+
+			// Get category details
+			const category = await db
+				.select()
+				.from(categories)
+				.where(
+					and(
+						eq(categories.id, categoryId),
+						eq(categories.competitionId, competitionId),
+					),
+				)
+				.get();
+
+			if (!category) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Category not found",
+				});
+			}
+
+			// Check user's current submission count for this category
+			const userSubmissions = await db
+				.select({ count: sql<number>`COUNT(*)` })
+				.from(photos)
+				.where(
+					and(
+						eq(photos.userId, user.id),
+						eq(photos.categoryId, categoryId),
+						eq(photos.competitionId, competitionId),
+					),
+				)
+				.get();
+
+			const submissionCount = userSubmissions?.count || 0;
+			const remainingSlots = Math.max(
+				0,
+				category.maxPhotosPerUser - submissionCount,
+			);
+
+			if (remainingSlots <= 0) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You have reached the submission limit for this category",
+				});
+			}
+
+			return {
+				competition,
+				category,
+				submissionCount,
+				remainingSlots,
+			};
 		}),
 });
