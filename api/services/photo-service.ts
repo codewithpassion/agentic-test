@@ -1,11 +1,11 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
-import { PhotoFileStore } from "../../workers/lib/photo-file-store";
-import type { PhotoFile } from "../../workers/lib/photo-file-store";
 import { createDb } from "../database/db";
 import { categories, competitions, photos } from "../database/schema";
 import type { NewPhoto, Photo } from "../database/schema";
 import { generateId } from "../lib/utils";
+import { PhotoFileStore } from "./photo-file-store";
+import type { PhotoFile } from "./photo-file-store";
 
 export class PhotoService {
 	private db: ReturnType<typeof createDb>;
