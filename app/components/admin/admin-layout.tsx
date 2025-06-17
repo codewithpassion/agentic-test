@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router";
 import { Navigate } from "react-router";
-import { useAuth } from "~/contexts/auth-context";
+import { useAuth } from "~/hooks/use-auth";
 import { AdminBreadcrumbs } from "./admin-breadcrumbs";
 import { AdminHeader } from "./admin-header";
 import { AdminSidebar } from "./admin-sidebar";

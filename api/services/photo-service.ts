@@ -176,6 +176,10 @@ export class PhotoService {
 
 			return photo;
 		} catch (error) {
+			console.error(
+				`Database insert failed. UserId: ${userId}, competitionid: ${photoData.competitionId}, category: ${photoData.categoryId}, title: ${photoData.title}`,
+				error,
+			);
 			// If database operation failed, clean up the uploaded file
 			try {
 				await this.fileStore.delete(uploadedFile);

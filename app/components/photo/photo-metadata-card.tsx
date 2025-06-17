@@ -29,7 +29,7 @@ const photoMetadataSchema = z.object({
 		.max(100, "Title must not exceed 100 characters"),
 	description: z
 		.string()
-		.min(20, "Description must be at least 20 characters")
+		.min(10, "Description must be at least 10 characters")
 		.max(500, "Description must not exceed 500 characters"),
 	dateTaken: z
 		.string()
@@ -252,7 +252,7 @@ export function PhotoMetadataCard({
 					id={`title-${file.name}`}
 					placeholder="Enter a descriptive title for your photo"
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary",
+						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800",
 						errors.title ? "border-red-300" : "border-gray-300",
 					)}
 					maxLength={100}
@@ -274,19 +274,23 @@ export function PhotoMetadataCard({
 					<span
 						className={cn(
 							"text-xs",
-							descriptionLength > 500 ? "text-red-500" : "text-gray-500",
+							descriptionLength > 500
+								? "text-red-500"
+								: descriptionLength < 10
+									? "text-amber-500"
+									: "text-gray-500",
 						)}
 					>
-						{descriptionLength}/500
+						{descriptionLength}/500 (min: 10)
 					</span>
 				</div>
 				<textarea
 					{...register("description")}
 					id={`description-${file.name}`}
 					rows={3}
-					placeholder="Describe your photo, the story behind it, technique used, etc."
+					placeholder="Describe your photo, the story behind it, technique used, etc. (minimum 10 characters)"
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-vertical",
+						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-vertical text-gray-800",
 						errors.description ? "border-red-300" : "border-gray-300",
 					)}
 					maxLength={500}
@@ -311,7 +315,7 @@ export function PhotoMetadataCard({
 						id={`dateTaken-${file.name}`}
 						max={today}
 						className={cn(
-							"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary",
+							"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800",
 							errors.dateTaken ? "border-red-300" : "border-gray-300",
 						)}
 					/>
@@ -346,7 +350,7 @@ export function PhotoMetadataCard({
 					id={`location-${file.name}`}
 					placeholder="Where was this photo taken?"
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary",
+						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800",
 						errors.location ? "border-red-300" : "border-gray-300",
 					)}
 					maxLength={100}
@@ -392,7 +396,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`cameraMake-${file.name}`}
 									placeholder="e.g., Canon, Nikon"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={50}
 								/>
 							</div>
@@ -410,7 +414,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`cameraModel-${file.name}`}
 									placeholder="e.g., EOS R5, D850"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={50}
 								/>
 							</div>
@@ -428,7 +432,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`lens-${file.name}`}
 									placeholder="e.g., 24-70mm f/2.8"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={100}
 								/>
 							</div>
@@ -446,7 +450,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`focalLength-${file.name}`}
 									placeholder="e.g., 50mm"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={20}
 								/>
 							</div>
@@ -464,7 +468,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`aperture-${file.name}`}
 									placeholder="e.g., f/2.8"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={20}
 								/>
 							</div>
@@ -482,7 +486,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`shutterSpeed-${file.name}`}
 									placeholder="e.g., 1/125s"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={20}
 								/>
 							</div>
@@ -500,7 +504,7 @@ export function PhotoMetadataCard({
 									type="text"
 									id={`iso-${file.name}`}
 									placeholder="e.g., 400"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800"
 									maxLength={20}
 								/>
 							</div>
@@ -519,7 +523,18 @@ export function PhotoMetadataCard({
 				)}
 				{!isValid && Object.keys(errors).length > 0 && (
 					<div className="text-red-600">
-						Please complete all required fields
+						Please complete all required fields:{" "}
+						{Object.keys(errors)
+							.map((field) => {
+								const displayName =
+									field === "categoryId"
+										? "Category"
+										: field === "dateTaken"
+											? "Date Taken"
+											: field.charAt(0).toUpperCase() + field.slice(1);
+								return displayName;
+							})
+							.join(", ")}
 					</div>
 				)}
 			</div>

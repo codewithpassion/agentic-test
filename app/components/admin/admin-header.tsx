@@ -11,7 +11,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { useAuth } from "~/contexts/auth-context";
+import { useAuth } from "~/hooks/use-auth";
 import { cn } from "~/lib/utils";
 
 interface AdminHeaderProps {

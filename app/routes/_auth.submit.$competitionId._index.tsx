@@ -3,7 +3,7 @@
  */
 
 import { ArrowLeft, Plus, Upload } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { CategoryWithSubmissionInfo } from "~/components/photo/category-select";
 import {
@@ -19,6 +19,7 @@ import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 
 interface PhotoSubmissionData {
+	id: string;
 	file: File;
 	metadata: PhotoMetadataFormData | null;
 }
@@ -45,40 +46,66 @@ export default function SubmitCompetition() {
 	// Get user session
 	const { user } = useAuth();
 
+	useEffect(() => {
+		console.log("User session:", user);
+	}, [user]);
+
 	// File upload hook
-	const { addFiles, files, clearFiles, startUpload, startUploadForFile } =
-		useFileUpload({
-			competitionId: competitionId ?? "",
-			maxFiles: 10,
-			autoUpload: false, // We'll handle upload manually when metadata is complete
+	const {
+		addFiles,
+		files,
+		clearFiles,
+		removeFile,
+		startUpload,
+		startUploadForFile,
+	} = useFileUpload({
+		competitionId: competitionId ?? "",
+		maxFiles: 10,
+	});
+
+	// Sync photoSubmissions with files state
+	useEffect(() => {
+		// Add new files that don't have corresponding submissions yet
+		setPhotoSubmissions((prev) => {
+			const newSubmissions: PhotoSubmissionData[] = [];
+
+			for (const fileState of files) {
+				const existingSubmission = prev.find((s) => s.id === fileState.id);
+				if (!existingSubmission) {
+					newSubmissions.push({
+						id: fileState.id,
+						file: fileState.file,
+						metadata: null,
+					});
+				}
+			}
+
+			// Add new submissions and remove ones that no longer have files
+			const updated = [...prev, ...newSubmissions].filter((submission) =>
+				files.some((fileState) => fileState.id === submission.id),
+			);
+
+			if (newSubmissions.length > 0) {
+				console.log("Adding new submissions:", newSubmissions.length);
+			}
+
+			return updated;
 		});
+	}, [files]);
 
 	// tRPC mutations
 	const submitBatchMutation = trpc.photos.submitBatch.useMutation();
 
 	// Handle file selection
 	const handleFilesSelected = useCallback(
-		(newFiles: File[]) => {
+		async (newFiles: File[]) => {
 			console.log(
 				"handleFilesSelected called with:",
 				newFiles.map((f) => f.name),
 			);
 			if (newFiles.length > 0) {
-				// Add files to upload queue
-				addFiles(newFiles);
-
-				// Add files to photo submissions list
-				const newSubmissions: PhotoSubmissionData[] = newFiles.map((file) => ({
-					file,
-					metadata: null,
-				}));
-
-				console.log("Adding submissions:", newSubmissions.length);
-				setPhotoSubmissions((prev) => {
-					const updated = [...prev, ...newSubmissions];
-					console.log("Updated submissions:", updated.length);
-					return updated;
-				});
+				// Add files to upload queue first
+				await addFiles(newFiles);
 			}
 		},
 		[addFiles],
@@ -87,31 +114,15 @@ export default function SubmitCompetition() {
 	// Handle metadata changes for a specific photo
 	const handleMetadataChange = useCallback(
 		(fileIndex: number, metadata: PhotoMetadataFormData | null) => {
-			setPhotoSubmissions((prev) =>
-				prev.map((submission, index) =>
+			// Update the submission state only - no automatic upload
+			setPhotoSubmissions((prev) => {
+				const updated = prev.map((submission, index) =>
 					index === fileIndex ? { ...submission, metadata } : submission,
-				),
-			);
-
-			// If metadata is complete and we have a user, trigger upload
-			if (metadata && user?.id && competitionId) {
-				const submission = photoSubmissions[fileIndex];
-				if (submission) {
-					// Find the file in the upload hook
-					const fileState = files.find((f) => f.file === submission.file);
-					if (fileState && fileState.status === "pending") {
-						console.log("Triggering upload for file:", fileState.id);
-						startUploadForFile(
-							fileState.id,
-							submission.file,
-							user.id,
-							metadata.categoryId,
-						);
-					}
-				}
-			}
+				);
+				return updated;
+			});
 		},
-		[user?.id, competitionId, photoSubmissions, files, startUploadForFile],
+		[],
 	);
 
 	// Handle photo removal
@@ -119,20 +130,8 @@ export default function SubmitCompetition() {
 		(fileIndex: number) => {
 			const submission = photoSubmissions[fileIndex];
 			if (submission) {
-				// Remove from files array (this will stop upload if in progress)
-				const fileUploadIndex = files.findIndex(
-					(f) => f.file === submission.file,
-				);
-				if (fileUploadIndex !== -1) {
-					clearFiles(); // This is a simple approach - in a real app you'd want more granular removal
-					// Re-add all other files
-					const remainingFiles = photoSubmissions
-						.filter((_, index) => index !== fileIndex)
-						.map((s) => s.file);
-					if (remainingFiles.length > 0) {
-						addFiles(remainingFiles);
-					}
-				}
+				// Remove from files array using ID (this will stop upload if in progress)
+				removeFile(submission.id);
 
 				// Remove from submissions
 				setPhotoSubmissions((prev) =>
@@ -140,38 +139,88 @@ export default function SubmitCompetition() {
 				);
 			}
 		},
-		[photoSubmissions, files, clearFiles, addFiles],
+		[photoSubmissions, removeFile],
 	);
 
 	// Handle batch submission
 	const handleSubmitBatch = useCallback(async () => {
-		if (!competitionId || !competitionData) return;
+		if (!competitionId || !competitionData || !user?.id) return;
 
-		// Filter submissions that have complete metadata and uploaded files
-		const validSubmissions = photoSubmissions.filter((submission) => {
-			const uploadedFile = files.find(
-				(f) =>
-					f.file === submission.file &&
-					f.status === "completed" &&
-					f.uploadedFile,
-			);
-			return submission.metadata && uploadedFile;
-		});
+		// Filter submissions that have complete metadata
+		const submissionsWithMetadata = photoSubmissions.filter(
+			(submission) => submission.metadata,
+		);
 
-		if (validSubmissions.length === 0) {
-			alert("Please complete all photo forms and wait for uploads to finish.");
+		if (submissionsWithMetadata.length === 0) {
+			alert("Please complete all photo forms before submitting.");
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
-			// Prepare batch submission data
+			// First, upload all photos that haven't been uploaded yet
+			const uploadPromises: Promise<void>[] = [];
+
+			for (const submission of submissionsWithMetadata) {
+				const fileState = files.find((f) => f.id === submission.id);
+
+				// Only upload if file is pending (not already uploaded)
+				if (
+					fileState &&
+					fileState.status === "pending" &&
+					submission.metadata
+				) {
+					const uploadPromise = startUploadForFile(
+						fileState.id,
+						submission.file,
+						user.id,
+						submission.metadata.categoryId,
+						{
+							...submission.metadata,
+							dateTaken: new Date(submission.metadata.dateTaken),
+							focalLength: submission.metadata.focalLength?.trim()
+								? Number.parseFloat(submission.metadata.focalLength)
+								: undefined,
+							iso: submission.metadata.iso?.trim()
+								? Number.parseInt(submission.metadata.iso)
+								: undefined,
+						},
+					);
+					uploadPromises.push(uploadPromise);
+				}
+			}
+
+			// Wait for all uploads to complete
+			if (uploadPromises.length > 0) {
+				await Promise.all(uploadPromises);
+
+				// Wait a bit for the upload states to update
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+			}
+
+			// Now check which submissions have successfully uploaded files
+			const validSubmissions = photoSubmissions.filter((submission) => {
+				const uploadedFile = files.find(
+					(f) =>
+						f.id === submission.id &&
+						f.status === "completed" &&
+						f.uploadedFile,
+				);
+				return submission.metadata && uploadedFile;
+			});
+
+			if (validSubmissions.length === 0) {
+				alert("Photo uploads failed. Please try again.");
+				return;
+			}
+
+			// Prepare batch submission data for photos that uploaded successfully
 			const batchData = {
 				competitionId,
 				photos: validSubmissions.map((submission) => {
 					const uploadedFile = files.find(
 						(f) =>
-							f.file === submission.file &&
+							f.id === submission.id &&
 							f.status === "completed" &&
 							f.uploadedFile,
 					)?.uploadedFile;
@@ -228,8 +277,10 @@ export default function SubmitCompetition() {
 	}, [
 		competitionId,
 		competitionData,
+		user?.id,
 		photoSubmissions,
 		files,
+		startUploadForFile,
 		submitBatchMutation,
 		clearFiles,
 		navigate,
@@ -238,31 +289,19 @@ export default function SubmitCompetition() {
 	// Calculate submission stats
 	const completedMetadata = photoSubmissions.filter((s) => s.metadata).length;
 	const completedUploads = photoSubmissions.filter((submission) => {
-		const fileUpload = files.find((f) => f.file === submission.file);
+		const fileUpload = files.find((f) => f.id === submission.id);
 		return fileUpload?.status === "completed";
 	}).length;
-	const readyToSubmit = photoSubmissions.filter((submission) => {
-		const fileUpload = files.find((f) => f.file === submission.file);
-		return submission.metadata && fileUpload?.status === "completed";
-	}).length;
+	// Ready to submit = photos with complete metadata (uploads will happen on submit)
+	const readyToSubmit = photoSubmissions.filter(
+		(submission) => submission.metadata,
+	).length;
 
 	// Debug logging (only log when values change)
 	const statsRef = useRef<string>("");
 	const currentStats = `${photoSubmissions.length}-${completedMetadata}-${completedUploads}-${readyToSubmit}-${files.length}`;
 	if (statsRef.current !== currentStats) {
 		statsRef.current = currentStats;
-		console.log("Submission stats:", {
-			photoSubmissions: photoSubmissions.length,
-			completedMetadata,
-			completedUploads,
-			readyToSubmit,
-			files: files.length,
-			filesStatus: files.map((f) => ({
-				name: f.file.name,
-				status: f.status,
-				progress: f.progress,
-			})),
-		});
 	}
 
 	if (!competitionId) {
@@ -402,11 +441,11 @@ export default function SubmitCompetition() {
 						</h2>
 
 						{photoSubmissions.map((submission, index) => {
-							const fileUpload = files.find((f) => f.file === submission.file);
+							const fileUpload = files.find((f) => f.id === submission.id);
 
 							return (
 								<PhotoMetadataCard
-									key={`${submission.file.name}-${index}`}
+									key={submission.id}
 									file={submission.file}
 									categories={categoriesWithSubmissionInfo}
 									initialData={submission.metadata || undefined}
@@ -450,8 +489,8 @@ export default function SubmitCompetition() {
 								<Upload className="h-4 w-4" />
 								<span>
 									{isSubmitting
-										? "Submitting..."
-										: `Submit ${readyToSubmit} Photo${readyToSubmit !== 1 ? "s" : ""}`}
+										? "Uploading & Submitting..."
+										: `Upload & Submit ${readyToSubmit} Photo${readyToSubmit !== 1 ? "s" : ""}`}
 								</span>
 							</button>
 						</div>

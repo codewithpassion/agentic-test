@@ -25,13 +25,15 @@ export const photosRouter = router({
 	upload: protectedProcedure
 		.input(
 			z.object({
-				file: z.instanceof(File),
+				file: z.instanceof(Uint8Array), // We'll validate this manually
+				fileName: z.string(),
+				fileType: z.string(),
 				competitionId: z.string().uuid(),
 				categoryId: z.string().uuid(),
 				title: z.string().min(1).max(200),
-				description: z.string().max(1000).optional(),
-				dateTaken: z.date().optional(),
-				location: z.string().max(200).optional(),
+				description: z.string().min(10).max(1000),
+				dateTaken: z.date(),
+				location: z.string().min(2).max(200),
 				cameraMake: z.string().max(100).optional(),
 				cameraModel: z.string().max(100).optional(),
 				lens: z.string().max(100).optional(),
@@ -45,17 +47,36 @@ export const photosRouter = router({
 		)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const { file, ...photoData } = input;
+				const { file, fileName, fileType, ...photoData } = input;
+
+				// Validate file data
+				if (
+					!file ||
+					!(file instanceof ArrayBuffer || file instanceof Uint8Array)
+				) {
+					throw new Error("Invalid file data");
+				}
+
+				// Validate file type
+				const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+				if (!allowedTypes.includes(fileType)) {
+					throw new Error(
+						"Invalid file type. Only JPEG and PNG files are allowed.",
+					);
+				}
+
 				const photoService = new PhotoService(
 					ctx.env.DB,
 					ctx.env.PHOTO_STORAGE,
 				);
 
+				// Create a File object from the data
+				const blob = new Blob([file], { type: fileType });
+				const fileWithName = new File([blob], fileName, { type: fileType });
+
 				// Prepare photo data with defaults for required fields
 				const photoDataWithDefaults = {
 					...photoData,
-					description: photoData.description || "",
-					location: photoData.location || "",
 					width: photoData.width || 1920, // Default dimensions if not provided
 					height: photoData.height || 1080,
 					// Convert number fields to strings to match database schema
@@ -67,7 +88,7 @@ export const photosRouter = router({
 
 				const photo = await photoService.uploadPhoto(
 					ctx.user.id,
-					file,
+					fileWithName,
 					photoDataWithDefaults,
 				);
 				return photo;

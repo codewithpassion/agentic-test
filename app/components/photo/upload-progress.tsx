@@ -27,7 +27,6 @@ export interface UploadProgressProps {
 	completedFiles: number;
 	failedFiles: number;
 	currentFile?: string;
-	overallProgress?: number;
 	uploadSpeed?: number;
 	timeRemaining?: number;
 	className?: string;
@@ -38,7 +37,6 @@ export function UploadProgress({
 	completedFiles,
 	failedFiles,
 	currentFile,
-	overallProgress = 0,
 	uploadSpeed = 0,
 	timeRemaining = 0,
 	className,
@@ -117,27 +115,6 @@ export function UploadProgress({
 						)}
 					</div>
 				)}
-			</div>
-
-			{/* Progress bar */}
-			<div className="mb-4">
-				<div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-					<span>Overall progress</span>
-					<span>{Math.round(overallProgress)}%</span>
-				</div>
-				<div className="w-full bg-gray-200 rounded-full h-2">
-					<div
-						className={cn(
-							"h-2 rounded-full transition-all duration-300",
-							isComplete
-								? "bg-green-500"
-								: hasErrors && !isUploading
-									? "bg-red-500"
-									: "bg-blue-500",
-						)}
-						style={{ width: `${overallProgress}%` }}
-					/>
-				</div>
 			</div>
 
 			{/* Current file */}
@@ -247,11 +224,6 @@ export function DetailedUploadProgress({
 	const failedFiles = uploads.filter((u) => u.status === "failed").length;
 	const uploadingFiles = uploads.filter((u) => u.status === "uploading");
 
-	const overallProgress =
-		totalFiles > 0
-			? uploads.reduce((sum, upload) => sum + upload.progress, 0) / totalFiles
-			: 0;
-
 	const totalSpeed = uploadingFiles.reduce(
 		(sum, upload) => sum + (upload.speed || 0),
 		0,
@@ -259,16 +231,6 @@ export function DetailedUploadProgress({
 
 	return (
 		<div className={cn("space-y-4", className)}>
-			{/* Overall progress */}
-			<UploadProgress
-				totalFiles={totalFiles}
-				completedFiles={completedFiles}
-				failedFiles={failedFiles}
-				currentFile={uploadingFiles[0]?.fileName}
-				overallProgress={overallProgress}
-				uploadSpeed={totalSpeed}
-			/>
-
 			{/* Individual file progress */}
 			{uploads.length > 0 && (
 				<div className="space-y-2">
@@ -321,22 +283,35 @@ export function DetailedUploadProgress({
 								</div>
 
 								<div className="flex items-center space-x-2">
-									<span className="text-xs text-gray-500 w-10 text-right">
-										{Math.round(upload.progress)}%
-									</span>
+									{upload.status === "uploading" ? (
+										<span className="text-xs text-blue-500">Uploading...</span>
+									) : (
+										<span className="text-xs text-gray-500 w-10 text-right">
+											{Math.round(upload.progress)}%
+										</span>
+									)}
 									<div className="w-16">
-										<ProgressBar
-											progress={upload.progress}
-											showPercentage={false}
-											color={
-												upload.status === "completed"
-													? "green"
-													: upload.status === "failed"
-														? "red"
-														: "blue"
-											}
-											size="sm"
-										/>
+										{upload.status === "uploading" ? (
+											<div className="w-full bg-gray-200 rounded-full h-1">
+												<div
+													className="h-1 bg-blue-500 rounded-full animate-pulse"
+													style={{ width: "100%" }}
+												/>
+											</div>
+										) : (
+											<ProgressBar
+												progress={upload.progress}
+												showPercentage={false}
+												color={
+													upload.status === "completed"
+														? "green"
+														: upload.status === "failed"
+															? "red"
+															: "blue"
+												}
+												size="sm"
+											/>
+										)}
 									</div>
 								</div>
 							</div>

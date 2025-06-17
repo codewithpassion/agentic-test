@@ -9,6 +9,7 @@ import {
 	validateFile,
 } from "~/lib/file-validation";
 import { compressImage, shouldCompressImage } from "~/lib/image-utils";
+import { trpc } from "~/lib/trpc";
 
 export interface UploadedFile {
 	id: string;
@@ -16,6 +17,22 @@ export interface UploadedFile {
 	filePath: string;
 	url?: string;
 	key?: string;
+}
+
+export interface PhotoMetadata {
+	title: string;
+	description: string;
+	location: string;
+	dateTaken: Date;
+	cameraMake?: string;
+	cameraModel?: string;
+	lens?: string;
+	focalLength?: number;
+	aperture?: string;
+	shutterSpeed?: string;
+	iso?: number;
+	width?: number;
+	height?: number;
 }
 
 export interface FileUploadState {
@@ -29,24 +46,20 @@ export interface FileUploadState {
 }
 
 export interface UseFileUploadProps {
-	onUploadComplete?: (uploadedFiles: UploadedFile[]) => void;
 	onUploadProgress?: (files: FileUploadState[]) => void;
 	maxFiles?: number;
 	maxFileSize?: number;
 	validationRules?: FileValidationRules;
 	competitionId?: string;
-	autoUpload?: boolean;
 	compressionEnabled?: boolean;
 }
 
 export function useFileUpload({
-	onUploadComplete,
 	onUploadProgress,
 	maxFiles = 10,
 	maxFileSize = 10 * 1024 * 1024,
 	validationRules,
 	competitionId,
-	autoUpload = false,
 	compressionEnabled = true,
 }: UseFileUploadProps = {}) {
 	const [files, setFiles] = useState<FileUploadState[]>([]);
@@ -58,18 +71,22 @@ export function useFileUpload({
 		maxSize: maxFileSize,
 	};
 
+	// tRPC mutation for uploading
+	const uploadMutation = trpc.photos.upload.useMutation();
+
 	// Generate unique ID for each file
 	const generateFileId = useCallback(() => {
 		return `file-${Date.now()}-${++uploadId.current}`;
 	}, []);
 
-	// Upload a specific file immediately via direct POST
+	// Upload a specific file immediately via tRPC
 	const startUploadForFile = useCallback(
 		async (
 			fileId: string,
 			file: File,
 			userId?: string,
 			categoryId?: string,
+			metadata?: PhotoMetadata,
 		) => {
 			console.log(
 				"Starting upload for specific file:",
@@ -77,7 +94,7 @@ export function useFileUpload({
 				"to competition:",
 				competitionId,
 			);
-			if (!competitionId || !userId || !categoryId) {
+			if (!competitionId || !userId || !categoryId || !metadata) {
 				console.error("Missing required upload parameters");
 				return;
 			}
@@ -86,77 +103,24 @@ export function useFileUpload({
 				// Update status to uploading
 				setFiles((prev) =>
 					prev.map((f) =>
-						f.id === fileId ? { ...f, status: "uploading" as const } : f,
+						f.id === fileId
+							? { ...f, status: "uploading" as const, progress: 0 }
+							: f,
 					),
 				);
 
-				// Create form data for direct upload
-				const formData = new FormData();
-				formData.append("file", file);
-				formData.append("competitionId", competitionId);
-				formData.append("categoryId", categoryId);
-				formData.append("userId", userId);
-
-				// Track upload progress
-				const xhr = new XMLHttpRequest();
-				const startTime = Date.now();
-
-				// Set up progress tracking
-				xhr.upload.addEventListener("progress", (event) => {
-					if (event.lengthComputable) {
-						const percentage = (event.loaded / event.total) * 100;
-						const elapsed = (Date.now() - startTime) / 1000;
-						const speed = elapsed > 0 ? event.loaded / elapsed : 0;
-
-						setFiles((prev) =>
-							prev.map((f) =>
-								f.id === fileId ? { ...f, progress: percentage, speed } : f,
-							),
-						);
-					}
+				// Use tRPC to upload (convert File to ArrayBuffer)
+				const fileBuffer = await file.arrayBuffer();
+				console.log("Uploading file:", file.name, "as ArrayBuffer", fileBuffer);
+				const uintArray = new Uint8Array(fileBuffer);
+				const photo = await uploadMutation.mutateAsync({
+					file: uintArray,
+					fileName: file.name,
+					fileType: file.type,
+					competitionId,
+					categoryId,
+					...metadata,
 				});
-
-				// Handle completion
-				const uploadPromise = new Promise<UploadedFile>((resolve, reject) => {
-					xhr.onload = () => {
-						if (xhr.status === 200) {
-							try {
-								const response = JSON.parse(xhr.responseText);
-								if (response.success) {
-									resolve({
-										id: response.file.id,
-										file: file,
-										filePath: response.file.key,
-										url: response.file.url,
-										key: response.file.key,
-									});
-								} else {
-									reject(new Error(response.error || "Upload failed"));
-								}
-							} catch (e) {
-								reject(new Error("Invalid response from server"));
-							}
-						} else {
-							try {
-								const errorResponse = JSON.parse(xhr.responseText);
-								reject(new Error(errorResponse.error || "Upload failed"));
-							} catch {
-								reject(new Error(`Upload failed with status ${xhr.status}`));
-							}
-						}
-					};
-
-					xhr.onerror = () => reject(new Error("Network error during upload"));
-					xhr.ontimeout = () => reject(new Error("Upload timeout"));
-				});
-
-				// Start the upload
-				xhr.open("POST", "/api/upload");
-				xhr.timeout = 120000; // 2 minute timeout
-				xhr.send(formData);
-
-				// Wait for completion
-				const uploadedFile = await uploadPromise;
 
 				// Mark as completed
 				setFiles((prev) =>
@@ -166,7 +130,13 @@ export function useFileUpload({
 									...f,
 									status: "completed" as const,
 									progress: 100,
-									uploadedFile,
+									uploadedFile: {
+										id: photo.id,
+										file: file,
+										filePath: photo.filePath,
+										url: `/api/photos/serve/${encodeURIComponent(photo.filePath)}`,
+										key: photo.filePath,
+									},
 								}
 							: f,
 					),
@@ -188,7 +158,7 @@ export function useFileUpload({
 				);
 			}
 		},
-		[competitionId],
+		[competitionId, uploadMutation.mutateAsync],
 	);
 
 	// Validate and prepare a single file

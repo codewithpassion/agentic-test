@@ -1,15 +1,10 @@
-import { useMemo } from "react";
-import { useRouteLoaderData } from "react-router";
+import { useContext } from "react";
+import { AuthContext } from "../contexts/auth-context";
 
 export function useAuth() {
-	const { user, session } = useRouteLoaderData("root");
-	return useMemo(() => {
-		return {
-			user,
-			session,
-			isAuthenticated: !!user && !!session,
-			isAdmin: user?.role === "admin",
-			isSuperAdmin: user?.role === "superadmin",
-		};
-	}, [user, session]);
+	const context = useContext(AuthContext);
+	if (!context) {
+		throw new Error("useAuth must be used within an AuthProvider");
+	}
+	return context;
 }
