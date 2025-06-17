@@ -34,6 +34,40 @@ export default function EditSubmission() {
 	const updatePhotoMutation = trpc.photos.update.useMutation();
 	const utils = trpc.useUtils();
 
+	// Handle form submission
+	const handleMetadataSubmit = useCallback(
+		async (metadata: PhotoMetadata) => {
+			if (!photoId) return;
+
+			setIsSaving(true);
+			setSaveError(null);
+			setSaveSuccess(false);
+
+			try {
+				await updatePhotoMutation.mutateAsync({
+					id: photoId,
+					...metadata,
+					dateTaken: new Date(metadata.dateTaken),
+				});
+
+				// Invalidate caches
+				await utils.photos.getById.invalidate({ id: photoId });
+				await utils.photos.getUserSubmissions.invalidate();
+
+				setSaveSuccess(true);
+				setTimeout(() => setSaveSuccess(false), 3000);
+			} catch (error) {
+				console.error("Failed to update photo:", error);
+				setSaveError(
+					error instanceof Error ? error.message : "Failed to save changes",
+				);
+			} finally {
+				setIsSaving(false);
+			}
+		},
+		[photoId, updatePhotoMutation, utils],
+	);
+
 	// Handle not found
 	if (!photoId) {
 		return (
@@ -113,38 +147,6 @@ export default function EditSubmission() {
 		);
 	}
 
-	// Handle form submission
-	const handleMetadataSubmit = useCallback(
-		async (metadata: PhotoMetadata) => {
-			setIsSaving(true);
-			setSaveError(null);
-			setSaveSuccess(false);
-
-			try {
-				await updatePhotoMutation.mutateAsync({
-					id: photoId,
-					...metadata,
-					dateTaken: new Date(metadata.dateTaken),
-				});
-
-				// Invalidate caches
-				await utils.photos.getById.invalidate({ id: photoId });
-				await utils.photos.getUserSubmissions.invalidate();
-
-				setSaveSuccess(true);
-				setTimeout(() => setSaveSuccess(false), 3000);
-			} catch (error) {
-				console.error("Failed to update photo:", error);
-				setSaveError(
-					error instanceof Error ? error.message : "Failed to save changes",
-				);
-			} finally {
-				setIsSaving(false);
-			}
-		},
-		[photoId, updatePhotoMutation, utils],
-	);
-
 	// Prepare initial data for form
 	const initialData: PhotoMetadata = {
 		title: photo.title,
@@ -160,8 +162,8 @@ export default function EditSubmission() {
 		iso: photo.iso || "",
 	};
 
-	// Photo URL (placeholder for now)
-	const photoUrl = `/api/photos/${photo.id}/full`;
+	// Photo URL using the photo serve API route
+	const photoUrl = `/api/photos/serve/${encodeURIComponent(photo.filePath)}`;
 
 	return (
 		<div className="min-h-screen bg-gray-50 py-8">
