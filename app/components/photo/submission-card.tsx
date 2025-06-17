@@ -118,8 +118,8 @@ export function SubmissionCard({
 	const statusInfo = getStatusInfo(photo.status);
 	const StatusIcon = statusInfo.icon;
 
-	// Generate photo URL (placeholder for now)
-	const photoUrl = `/api/photos/${photo.id}/thumb`; // This would need to be implemented
+	// Generate photo URL using the photo serve API route
+	const photoUrl = `/api/photos/serve/${encodeURIComponent(photo.filePath)}`;
 
 	if (viewMode === "list") {
 		return (
