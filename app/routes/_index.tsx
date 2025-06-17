@@ -100,9 +100,9 @@ export default function HomePage() {
 								<Link to="/" className="text-gray-900 hover:text-gray-600">
 									Home
 								</Link>
-								<a href="#about" className="text-gray-900 hover:text-gray-600">
+								<Link to="/about" className="text-gray-900 hover:text-gray-600">
 									About
-								</a>
+								</Link>
 								{categories.map((category) => (
 									<Link
 										key={category.id}
@@ -116,12 +116,12 @@ export default function HomePage() {
 										{category.name}
 									</Link>
 								))}
-								<a
-									href="#contact"
+								<Link
+									to="/contact"
 									className="text-gray-900 hover:text-gray-600"
 								>
 									Contact
-								</a>
+								</Link>
 							</div>
 						</div>
 						<div className="flex items-center space-x-4">
