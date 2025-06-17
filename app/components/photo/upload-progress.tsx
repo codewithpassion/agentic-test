@@ -5,8 +5,22 @@
 import { AlertCircle, CheckCircle, Clock, Loader2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatFileSize } from "~/lib/file-validation";
-import { uploadService } from "~/lib/upload.client";
 import { cn } from "~/lib/utils";
+
+// Utility functions for formatting
+const formatSpeed = (bytesPerSecond: number): string => {
+	if (bytesPerSecond === 0) return "0 B/s";
+	const units = ["B/s", "KB/s", "MB/s", "GB/s"];
+	const k = 1024;
+	const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+	return `${Number.parseFloat((bytesPerSecond / k ** i).toFixed(1))} ${units[i]}`;
+};
+
+const formatTimeRemaining = (seconds: number): string => {
+	if (seconds < 60) return `${Math.round(seconds)}s`;
+	if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+	return `${Math.round(seconds / 3600)}h`;
+};
 
 export interface UploadProgressProps {
 	totalFiles: number;
@@ -94,13 +108,11 @@ export function UploadProgress({
 				{/* Speed and time remaining */}
 				{isUploading && uploadSpeed > 0 && (
 					<div className="text-right">
-						<p className="text-sm text-gray-600">
-							{uploadService.formatSpeed(uploadSpeed)}
-						</p>
+						<p className="text-sm text-gray-600">{formatSpeed(uploadSpeed)}</p>
 						{timeRemaining > 0 && (
 							<p className="text-xs text-gray-500 flex items-center">
 								<Clock className="h-3 w-3 mr-1" />
-								{uploadService.formatTimeRemaining(timeRemaining)}
+								{formatTimeRemaining(timeRemaining)}
 							</p>
 						)}
 					</div>
@@ -297,7 +309,7 @@ export function DetailedUploadProgress({
 										<p className="text-xs text-gray-500">
 											{formatFileSize(upload.fileSize)}
 											{upload.speed && upload.status === "uploading" && (
-												<> • {uploadService.formatSpeed(upload.speed)}</>
+												<> • {formatSpeed(upload.speed)}</>
 											)}
 										</p>
 										{upload.error && (

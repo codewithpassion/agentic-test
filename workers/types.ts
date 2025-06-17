@@ -36,6 +36,8 @@ export interface AuthSession extends Session {
 	user: AuthUser;
 }
 
+export type CloudflareBindings = globalThis.CloudflareBindings;
+
 // Role hierarchy for permission checking
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
 	user: 1,

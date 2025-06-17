@@ -8,6 +8,7 @@
 	"files": {
 		"ignoreUnknown": false,
 		"ignore": [
+			"build/**/*",
 			"app/components/ui/**/*",
 			"worker-configuration.d.ts",
 			".react-router/types/+register.ts",

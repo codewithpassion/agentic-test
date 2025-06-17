@@ -1,5 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { PhotoFileStore } from "../../workers/lib/photo-file-store";
+import type { PhotoFile } from "../../workers/lib/photo-file-store";
 import { createDb } from "../database/db";
 import { categories, competitions, photos } from "../database/schema";
 import type { NewPhoto, Photo } from "../database/schema";
@@ -7,9 +9,11 @@ import { generateId } from "../lib/utils";
 
 export class PhotoService {
 	private db: ReturnType<typeof createDb>;
+	private fileStore: PhotoFileStore;
 
-	constructor(database: D1Database) {
+	constructor(database: D1Database, photoStorage: R2Bucket) {
 		this.db = createDb(database);
+		this.fileStore = new PhotoFileStore(photoStorage);
 	}
 
 	/**
@@ -65,6 +69,124 @@ export class PhotoService {
 		}
 
 		return photo;
+	}
+
+	/**
+	 * Upload photo file and create database record in a coordinated transaction
+	 */
+	async uploadPhoto(
+		userId: string,
+		file: File,
+		photoData: Omit<
+			NewPhoto,
+			| "id"
+			| "userId"
+			| "createdAt"
+			| "updatedAt"
+			| "filePath"
+			| "fileName"
+			| "fileSize"
+			| "mimeType"
+		>,
+	): Promise<Photo> {
+		// Validate file type
+		const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+		if (!allowedTypes.includes(file.type)) {
+			throw new Error(
+				"Invalid file type. Only JPEG and PNG files are allowed.",
+			);
+		}
+
+		// Validate file size (10MB max)
+		const maxSize = 10 * 1024 * 1024;
+		if (file.size > maxSize) {
+			throw new Error("File too large. Maximum size is 10MB.");
+		}
+
+		// Check submission limits for this category
+		await this.checkSubmissionLimits(
+			userId,
+			photoData.competitionId,
+			photoData.categoryId,
+		);
+
+		// Check for duplicate submissions (same title in same category)
+		const existingPhoto = await this.db
+			.select()
+			.from(photos)
+			.where(
+				and(
+					eq(photos.userId, userId),
+					eq(photos.competitionId, photoData.competitionId),
+					eq(photos.categoryId, photoData.categoryId),
+					eq(photos.title, photoData.title),
+					sql`${photos.status} != 'deleted'`,
+				),
+			)
+			.get();
+
+		if (existingPhoto) {
+			throw new Error(
+				"A photo with this title already exists in this category",
+			);
+		}
+
+		const photoId = generateId();
+
+		// Upload file to R2 storage
+		let uploadedFile: PhotoFile;
+		try {
+			uploadedFile = await this.fileStore.create({
+				id: photoId,
+				name: file.name,
+				type: file.type,
+				content: file,
+				competitionId: photoData.competitionId,
+				categoryId: photoData.categoryId,
+				userId,
+			});
+		} catch (error) {
+			console.error("Failed to upload file to R2:", error);
+			throw new Error("Failed to upload file to storage");
+		}
+
+		// Create database record
+		const newPhoto: NewPhoto = {
+			id: photoId,
+			userId,
+			...photoData,
+			filePath: uploadedFile.key || "",
+			fileName: file.name,
+			fileSize: file.size,
+			mimeType: file.type as "image/jpeg" | "image/png",
+			status: "pending",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+
+		try {
+			await this.db.insert(photos).values(newPhoto);
+
+			const photo = await this.getPhotoById(photoId);
+			if (!photo) {
+				// If database insert failed, clean up the uploaded file
+				await this.fileStore.delete(uploadedFile);
+				throw new Error("Failed to create photo record");
+			}
+
+			return photo;
+		} catch (error) {
+			// If database operation failed, clean up the uploaded file
+			try {
+				await this.fileStore.delete(uploadedFile);
+			} catch (cleanupError) {
+				console.error(
+					"Failed to cleanup uploaded file after database error:",
+					cleanupError,
+				);
+			}
+			throw error;
+		}
 	}
 
 	/**

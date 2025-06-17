@@ -3,15 +3,17 @@
  */
 
 import { ArrowLeft, Plus, Upload } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { CategoryWithSubmissionInfo } from "~/components/photo/category-select";
 import {
 	PhotoMetadataCard,
 	type PhotoMetadataFormData,
 } from "~/components/photo/photo-metadata-card";
+import { DetailedUploadProgress } from "~/components/photo/upload-progress";
 import { UploadZone } from "~/components/photo/upload-zone";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
+import { useAuth } from "~/hooks/use-auth";
 import { useFileUpload } from "~/hooks/use-file-upload";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
@@ -40,12 +42,16 @@ export default function SubmitCompetition() {
 		{ enabled: !!competitionId },
 	);
 
+	// Get user session
+	const { user } = useAuth();
+
 	// File upload hook
-	const { addFiles, files, clearFiles, startUpload } = useFileUpload({
-		competitionId: competitionId ?? "",
-		maxFiles: 10,
-		autoUpload: true,
-	});
+	const { addFiles, files, clearFiles, startUpload, startUploadForFile } =
+		useFileUpload({
+			competitionId: competitionId ?? "",
+			maxFiles: 10,
+			autoUpload: false, // We'll handle upload manually when metadata is complete
+		});
 
 	// tRPC mutations
 	const submitBatchMutation = trpc.photos.submitBatch.useMutation();
@@ -53,6 +59,10 @@ export default function SubmitCompetition() {
 	// Handle file selection
 	const handleFilesSelected = useCallback(
 		(newFiles: File[]) => {
+			console.log(
+				"handleFilesSelected called with:",
+				newFiles.map((f) => f.name),
+			);
 			if (newFiles.length > 0) {
 				// Add files to upload queue
 				addFiles(newFiles);
@@ -63,7 +73,12 @@ export default function SubmitCompetition() {
 					metadata: null,
 				}));
 
-				setPhotoSubmissions((prev) => [...prev, ...newSubmissions]);
+				console.log("Adding submissions:", newSubmissions.length);
+				setPhotoSubmissions((prev) => {
+					const updated = [...prev, ...newSubmissions];
+					console.log("Updated submissions:", updated.length);
+					return updated;
+				});
 			}
 		},
 		[addFiles],
@@ -77,8 +92,26 @@ export default function SubmitCompetition() {
 					index === fileIndex ? { ...submission, metadata } : submission,
 				),
 			);
+
+			// If metadata is complete and we have a user, trigger upload
+			if (metadata && user?.id && competitionId) {
+				const submission = photoSubmissions[fileIndex];
+				if (submission) {
+					// Find the file in the upload hook
+					const fileState = files.find((f) => f.file === submission.file);
+					if (fileState && fileState.status === "pending") {
+						console.log("Triggering upload for file:", fileState.id);
+						startUploadForFile(
+							fileState.id,
+							submission.file,
+							user.id,
+							metadata.categoryId,
+						);
+					}
+				}
+			}
 		},
-		[],
+		[user?.id, competitionId, photoSubmissions, files, startUploadForFile],
 	);
 
 	// Handle photo removal
@@ -213,6 +246,25 @@ export default function SubmitCompetition() {
 		return submission.metadata && fileUpload?.status === "completed";
 	}).length;
 
+	// Debug logging (only log when values change)
+	const statsRef = useRef<string>("");
+	const currentStats = `${photoSubmissions.length}-${completedMetadata}-${completedUploads}-${readyToSubmit}-${files.length}`;
+	if (statsRef.current !== currentStats) {
+		statsRef.current = currentStats;
+		console.log("Submission stats:", {
+			photoSubmissions: photoSubmissions.length,
+			completedMetadata,
+			completedUploads,
+			readyToSubmit,
+			files: files.length,
+			filesStatus: files.map((f) => ({
+				name: f.file.name,
+				status: f.status,
+				progress: f.progress,
+			})),
+		});
+	}
+
 	if (!competitionId) {
 		return (
 			<div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
@@ -325,6 +377,22 @@ export default function SubmitCompetition() {
 						</p>
 					)}
 				</div>
+
+				{/* Upload Progress Display */}
+				{files.length > 0 && (
+					<DetailedUploadProgress
+						uploads={files.map((file) => ({
+							id: file.id,
+							fileName: file.file.name,
+							fileSize: file.file.size,
+							progress: file.progress,
+							status: file.status === "validating" ? "pending" : file.status,
+							error: file.error,
+							speed: file.speed,
+						}))}
+						className="mb-6"
+					/>
+				)}
 
 				{/* Photo Metadata Forms */}
 				{photoSubmissions.length > 0 && (

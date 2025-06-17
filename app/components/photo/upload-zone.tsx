@@ -133,9 +133,8 @@ export function UploadZone({
 			console.log("Upload zone clicked", {
 				disabled,
 				hasRef: !!fileInputRef.current,
+				target: e.target,
 			});
-			e.preventDefault();
-			e.stopPropagation();
 
 			if (!disabled && fileInputRef.current) {
 				console.log("Triggering file input click");
@@ -154,6 +153,16 @@ export function UploadZone({
 
 	return (
 		<div className={cn("relative", className)}>
+			<input
+				ref={fileInputRef}
+				type="file"
+				className="sr-only"
+				multiple={multiple}
+				accept={acceptedTypes.join(",")}
+				onChange={handleFileInput}
+				disabled={disabled}
+				tabIndex={-1}
+			/>
 			<button
 				type="button"
 				className={cn(
@@ -175,17 +184,6 @@ export function UploadZone({
 				disabled={disabled}
 				aria-label="Upload files"
 			>
-				<input
-					ref={fileInputRef}
-					type="file"
-					className="sr-only"
-					multiple={multiple}
-					accept={acceptedTypes.join(",")}
-					onChange={handleFileInput}
-					disabled={disabled}
-					tabIndex={-1}
-				/>
-
 				<div className="flex flex-col items-center space-y-4">
 					{isDragOver ? (
 						<div className="animate-bounce">

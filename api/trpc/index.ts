@@ -3,7 +3,6 @@ import { categoriesRouter } from "./routers/categories";
 import { competitionsRouter } from "./routers/competitions";
 import { dashboardRouter } from "./routers/dashboard";
 import { photosRouter } from "./routers/photos";
-import { uploadRouter } from "./routers/upload";
 // Import other routers as they're created
 // import { votesRouter } from "./routers/votes";
 // import { reportsRouter } from "./routers/reports";
@@ -15,7 +14,6 @@ export const appRouter = router({
 	categories: categoriesRouter,
 	dashboard: dashboardRouter,
 	photos: photosRouter,
-	upload: uploadRouter,
 	// Add other routers as they're created
 	// votes: votesRouter,
 	// reports: reportsRouter,

@@ -20,13 +20,78 @@ import {
 
 export const photosRouter = router({
 	/**
+	 * Upload photo file and create database record
+	 */
+	upload: protectedProcedure
+		.input(
+			z.object({
+				file: z.instanceof(File),
+				competitionId: z.string().uuid(),
+				categoryId: z.string().uuid(),
+				title: z.string().min(1).max(200),
+				description: z.string().max(1000).optional(),
+				dateTaken: z.date().optional(),
+				location: z.string().max(200).optional(),
+				cameraMake: z.string().max(100).optional(),
+				cameraModel: z.string().max(100).optional(),
+				lens: z.string().max(100).optional(),
+				focalLength: z.number().positive().optional(),
+				aperture: z.string().max(10).optional(),
+				shutterSpeed: z.string().max(20).optional(),
+				iso: z.number().positive().optional(),
+				width: z.number().positive().optional(),
+				height: z.number().positive().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				const { file, ...photoData } = input;
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
+
+				// Prepare photo data with defaults for required fields
+				const photoDataWithDefaults = {
+					...photoData,
+					description: photoData.description || "",
+					location: photoData.location || "",
+					width: photoData.width || 1920, // Default dimensions if not provided
+					height: photoData.height || 1080,
+					// Convert number fields to strings to match database schema
+					focalLength: photoData.focalLength
+						? photoData.focalLength.toString()
+						: undefined,
+					iso: photoData.iso ? photoData.iso.toString() : undefined,
+				};
+
+				const photo = await photoService.uploadPhoto(
+					ctx.user.id,
+					file,
+					photoDataWithDefaults,
+				);
+				return photo;
+			} catch (error) {
+				console.error("Photo upload error:", error);
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						error instanceof Error ? error.message : "Failed to upload photo",
+				});
+			}
+		}),
+
+	/**
 	 * Submit a new photo
 	 */
 	submit: protectedProcedure
 		.input(photoSubmissionSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				const photo = await photoService.submitPhoto(ctx.user.id, input);
 				return photo;
 			} catch (error) {
@@ -46,7 +111,10 @@ export const photosRouter = router({
 		.input(batchPhotoSubmissionSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				const results = await photoService.submitPhotoBatch(ctx.user.id, input);
 				return results;
 			} catch (error) {
@@ -67,7 +135,10 @@ export const photosRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			try {
 				const { id, ...updates } = input;
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				const photo = await photoService.updatePhoto(id, ctx.user.id, updates);
 				return photo;
 			} catch (error) {
@@ -87,7 +158,10 @@ export const photosRouter = router({
 		.input(z.object({ id: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				await photoService.deletePhoto(input.id, ctx.user.id);
 				return { success: true };
 			} catch (error) {
@@ -107,7 +181,10 @@ export const photosRouter = router({
 		.input(getUserSubmissionsSchema)
 		.query(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				return await photoService.getUserSubmissions(ctx.user.id, input);
 			} catch (error) {
 				console.error("Get user submissions error:", error);
@@ -126,7 +203,10 @@ export const photosRouter = router({
 		.query(async ({ ctx, input }) => {
 			try {
 				const { categoryId, ...options } = input;
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				return await photoService.getPhotosByCategory(categoryId, options);
 			} catch (error) {
 				console.error("Get photos by category error:", error);
@@ -145,7 +225,10 @@ export const photosRouter = router({
 		.query(async ({ ctx, input }) => {
 			try {
 				const { competitionId, ...options } = input;
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				return await photoService.getPhotosByCompetition(
 					competitionId,
 					options,
@@ -166,7 +249,10 @@ export const photosRouter = router({
 		.input(z.object({ id: z.string() }))
 		.query(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				const photo = await photoService.getPhotoByIdWithRelations(input.id);
 
 				if (!photo) {
@@ -210,7 +296,10 @@ export const photosRouter = router({
 		)
 		.query(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				return await photoService.getPhotosForModeration(input);
 			} catch (error) {
 				console.error("Get photos for moderation error:", error);
@@ -234,7 +323,10 @@ export const photosRouter = router({
 		)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const photoService = new PhotoService(ctx.env.DB);
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
 				const photo = await photoService.moderatePhoto(
 					input.photoId,
 					ctx.user.id,

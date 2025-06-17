@@ -1,5 +1,5 @@
 /**
- * File upload hook for managing multiple file uploads with progress tracking
+ * Simplified file upload hook for direct R2 uploads
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -9,14 +9,13 @@ import {
 	validateFile,
 } from "~/lib/file-validation";
 import { compressImage, shouldCompressImage } from "~/lib/image-utils";
-import { trpc } from "~/lib/trpc";
-import { type UploadProgress, uploadManager } from "~/lib/upload.client";
 
 export interface UploadedFile {
 	id: string;
 	file: File;
 	filePath: string;
 	url?: string;
+	key?: string;
 }
 
 export interface FileUploadState {
@@ -59,34 +58,164 @@ export function useFileUpload({
 		maxSize: maxFileSize,
 	};
 
-	// tRPC mutations
-	const getSignedUrlMutation = trpc.upload.getSignedUrl.useMutation();
-	const confirmUploadMutation = trpc.upload.confirmUpload.useMutation();
-
 	// Generate unique ID for each file
 	const generateFileId = useCallback(() => {
 		return `file-${Date.now()}-${++uploadId.current}`;
 	}, []);
 
+	// Upload a specific file immediately via direct POST
+	const startUploadForFile = useCallback(
+		async (
+			fileId: string,
+			file: File,
+			userId?: string,
+			categoryId?: string,
+		) => {
+			console.log(
+				"Starting upload for specific file:",
+				fileId,
+				"to competition:",
+				competitionId,
+			);
+			if (!competitionId || !userId || !categoryId) {
+				console.error("Missing required upload parameters");
+				return;
+			}
+
+			try {
+				// Update status to uploading
+				setFiles((prev) =>
+					prev.map((f) =>
+						f.id === fileId ? { ...f, status: "uploading" as const } : f,
+					),
+				);
+
+				// Create form data for direct upload
+				const formData = new FormData();
+				formData.append("file", file);
+				formData.append("competitionId", competitionId);
+				formData.append("categoryId", categoryId);
+				formData.append("userId", userId);
+
+				// Track upload progress
+				const xhr = new XMLHttpRequest();
+				const startTime = Date.now();
+
+				// Set up progress tracking
+				xhr.upload.addEventListener("progress", (event) => {
+					if (event.lengthComputable) {
+						const percentage = (event.loaded / event.total) * 100;
+						const elapsed = (Date.now() - startTime) / 1000;
+						const speed = elapsed > 0 ? event.loaded / elapsed : 0;
+
+						setFiles((prev) =>
+							prev.map((f) =>
+								f.id === fileId ? { ...f, progress: percentage, speed } : f,
+							),
+						);
+					}
+				});
+
+				// Handle completion
+				const uploadPromise = new Promise<UploadedFile>((resolve, reject) => {
+					xhr.onload = () => {
+						if (xhr.status === 200) {
+							try {
+								const response = JSON.parse(xhr.responseText);
+								if (response.success) {
+									resolve({
+										id: response.file.id,
+										file: file,
+										filePath: response.file.key,
+										url: response.file.url,
+										key: response.file.key,
+									});
+								} else {
+									reject(new Error(response.error || "Upload failed"));
+								}
+							} catch (e) {
+								reject(new Error("Invalid response from server"));
+							}
+						} else {
+							try {
+								const errorResponse = JSON.parse(xhr.responseText);
+								reject(new Error(errorResponse.error || "Upload failed"));
+							} catch {
+								reject(new Error(`Upload failed with status ${xhr.status}`));
+							}
+						}
+					};
+
+					xhr.onerror = () => reject(new Error("Network error during upload"));
+					xhr.ontimeout = () => reject(new Error("Upload timeout"));
+				});
+
+				// Start the upload
+				xhr.open("POST", "/api/upload");
+				xhr.timeout = 120000; // 2 minute timeout
+				xhr.send(formData);
+
+				// Wait for completion
+				const uploadedFile = await uploadPromise;
+
+				// Mark as completed
+				setFiles((prev) =>
+					prev.map((f) =>
+						f.id === fileId
+							? {
+									...f,
+									status: "completed" as const,
+									progress: 100,
+									uploadedFile,
+								}
+							: f,
+					),
+				);
+				console.log("Upload completed for:", fileId);
+			} catch (error) {
+				console.error("Upload failed for file:", fileId, error);
+				setFiles((prev) =>
+					prev.map((f) =>
+						f.id === fileId
+							? {
+									...f,
+									status: "failed" as const,
+									error:
+										error instanceof Error ? error.message : "Upload failed",
+								}
+							: f,
+					),
+				);
+			}
+		},
+		[competitionId],
+	);
+
 	// Validate and prepare a single file
 	const validateAndPrepareFile = useCallback(
-		async (fileId: string) => {
+		async (fileState: FileUploadState) => {
+			console.log("Starting validation for file:", fileState.id);
 			setFiles((prev) =>
 				prev.map((f) =>
-					f.id === fileId ? { ...f, status: "validating" as const } : f,
+					f.id === fileState.id ? { ...f, status: "validating" as const } : f,
 				),
 			);
 
 			try {
-				const fileState = files.find((f) => f.id === fileId);
-				if (!fileState) return;
-
+				console.log(
+					"Validating file:",
+					fileState.file.name,
+					"with rules:",
+					rules,
+				);
 				// Validate file
 				const validation = await validateFile(fileState.file, rules);
+				console.log("Validation result:", validation);
 				if (!validation.valid) {
+					console.log("Validation failed:", validation.error);
 					setFiles((prev) =>
 						prev.map((f) =>
-							f.id === fileId
+							f.id === fileState.id
 								? { ...f, status: "failed" as const, error: validation.error }
 								: f,
 						),
@@ -96,29 +225,38 @@ export function useFileUpload({
 
 				// Check if compression is needed
 				let processedFile = fileState.file;
+				console.log("Checking compression for:", fileState.file.name);
 				if (compressionEnabled && (await shouldCompressImage(fileState.file))) {
+					console.log("Compressing image:", fileState.file.name);
 					try {
 						processedFile = await compressImage(fileState.file, {
 							quality: 0.8,
 							maxWidth: 2048,
 							maxHeight: 2048,
 						});
+						console.log("Compression completed");
 					} catch (error) {
 						console.warn("Compression failed, using original file:", error);
 					}
 				}
 
+				console.log("Setting file to pending status");
 				setFiles((prev) =>
 					prev.map((f) =>
-						f.id === fileId
+						f.id === fileState.id
 							? { ...f, file: processedFile, status: "pending" as const }
 							: f,
 					),
 				);
+				console.log("File validation completed for:", fileState.id);
+
+				// Note: Auto-upload will be handled by the PhotoMetadataCard component
+				// when metadata is provided
 			} catch (error) {
+				console.log("Validation error:", error);
 				setFiles((prev) =>
 					prev.map((f) =>
-						f.id === fileId
+						f.id === fileState.id
 							? {
 									...f,
 									status: "failed" as const,
@@ -132,134 +270,17 @@ export function useFileUpload({
 				);
 			}
 		},
-		[files, rules, compressionEnabled],
+		[rules, compressionEnabled],
 	);
 
-	// Start upload process
+	// Batch upload all pending files (deprecated - now handled individually)
 	const startUpload = useCallback(async () => {
-		if (!competitionId) {
-			console.error("Competition ID is required for upload");
-			return;
-		}
-
-		const pendingFiles = files.filter((f) => f.status === "pending");
-		if (pendingFiles.length === 0) return;
-
-		setIsUploading(true);
-
-		for (const fileState of pendingFiles) {
-			try {
-				// Update status to uploading
-				setFiles((prev) =>
-					prev.map((f) =>
-						f.id === fileState.id ? { ...f, status: "uploading" as const } : f,
-					),
-				);
-
-				// Get signed URL
-				const signedUrlResult = await getSignedUrlMutation.mutateAsync({
-					fileName: fileState.file.name,
-					fileSize: fileState.file.size,
-					mimeType: fileState.file.type as "image/jpeg" | "image/png",
-					competitionId,
-				});
-
-				// Track upload progress
-				const startTime = Date.now();
-				const onProgress = (progress: UploadProgress) => {
-					const elapsed = (Date.now() - startTime) / 1000;
-					const speed = elapsed > 0 ? progress.loaded / elapsed : 0;
-
-					setFiles((prev) =>
-						prev.map((f) =>
-							f.id === fileState.id
-								? { ...f, progress: progress.percentage, speed }
-								: f,
-						),
-					);
-				};
-
-				// Upload file
-				const uploadResult = await uploadManager.startUpload(
-					fileState.id,
-					fileState.file,
-					signedUrlResult.signedUrl,
-					onProgress,
-				);
-
-				if (uploadResult.success) {
-					// Confirm upload with server
-					try {
-						const dimensions = await import("~/lib/image-utils").then((m) =>
-							m.getImageDimensions(fileState.file),
-						);
-
-						await confirmUploadMutation.mutateAsync({
-							photoId: signedUrlResult.photoId,
-							filePath: signedUrlResult.filePath,
-							width: dimensions.width,
-							height: dimensions.height,
-						});
-
-						// Mark as completed
-						const uploadedFile: UploadedFile = {
-							id: signedUrlResult.photoId,
-							file: fileState.file,
-							filePath: signedUrlResult.filePath,
-						};
-
-						setFiles((prev) =>
-							prev.map((f) =>
-								f.id === fileState.id
-									? {
-											...f,
-											status: "completed" as const,
-											progress: 100,
-											uploadedFile,
-										}
-									: f,
-							),
-						);
-					} catch (confirmError) {
-						throw new Error(`Upload confirmation failed: ${confirmError}`);
-					}
-				} else {
-					throw new Error(uploadResult.error || "Upload failed");
-				}
-			} catch (error) {
-				setFiles((prev) =>
-					prev.map((f) =>
-						f.id === fileState.id
-							? {
-									...f,
-									status: "failed" as const,
-									error:
-										error instanceof Error ? error.message : "Upload failed",
-								}
-							: f,
-					),
-				);
-			}
-		}
-
-		setIsUploading(false);
-
-		// Notify completion
-		const completedFiles = files
-			.filter((f) => f.status === "completed" && f.uploadedFile)
-			.map((f) => f.uploadedFile)
-			.filter((file): file is UploadedFile => file !== undefined);
-
-		if (completedFiles.length > 0 && onUploadComplete) {
-			onUploadComplete(completedFiles);
-		}
-	}, [
-		files,
-		competitionId,
-		getSignedUrlMutation,
-		confirmUploadMutation,
-		onUploadComplete,
-	]);
+		console.log(
+			"startUpload called (deprecated - files upload individually now)",
+		);
+		// This method is now deprecated as files upload individually
+		// when metadata is provided via PhotoMetadataCard
+	}, []);
 
 	// Add files to the upload queue
 	const addFiles = useCallback(
@@ -280,36 +301,25 @@ export function useFileUpload({
 
 			// Validate files
 			for (const fileState of fileStates) {
-				await validateAndPrepareFile(fileState.id);
+				await validateAndPrepareFile(fileState);
 			}
 
-			// Auto-upload if enabled
-			if (autoUpload) {
-				startUpload();
-			}
+			// Auto-upload is now handled individually per file in PhotoMetadataCard
 		},
-		[
-			files.length,
-			maxFiles,
-			generateFileId,
-			autoUpload,
-			validateAndPrepareFile,
-			startUpload,
-		],
+		[files.length, maxFiles, generateFileId, validateAndPrepareFile],
 	);
 
 	// Remove file from upload queue
 	const removeFile = useCallback((fileId: string) => {
-		// Cancel upload if in progress
-		uploadManager.cancelUpload(fileId);
+		// Cancel upload if in progress (using XHR abort)
+		// Note: Individual XHR requests will be handled by the upload function
 
 		setFiles((prev) => prev.filter((f) => f.id !== fileId));
 	}, []);
 
 	// Clear all files
 	const clearFiles = useCallback(() => {
-		// Cancel all uploads
-		uploadManager.cancelAllUploads();
+		// Cancel all uploads (XHR requests will be aborted individually)
 		setFiles([]);
 		setIsUploading(false);
 	}, []);
@@ -335,12 +345,12 @@ export function useFileUpload({
 			);
 
 			// Re-validate and upload
-			await validateAndPrepareFile(fileId);
-			if (!isUploading) {
-				startUpload();
+			const updatedFileState = files.find((f) => f.id === fileId);
+			if (updatedFileState) {
+				await validateAndPrepareFile(updatedFileState);
 			}
 		},
-		[files, isUploading, validateAndPrepareFile, startUpload],
+		[files, validateAndPrepareFile],
 	);
 
 	// Calculate overall progress
@@ -374,7 +384,8 @@ export function useFileUpload({
 		addFiles,
 		removeFile,
 		clearFiles,
-		startUpload,
+		startUpload, // Deprecated but kept for backward compatibility
+		startUploadForFile, // New method for individual file uploads
 		retryUpload,
 		canUpload: stats.pending > 0 && !isUploading && !!competitionId,
 		hasFiles: files.length > 0,
