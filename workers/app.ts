@@ -8,7 +8,6 @@ import { authFactory } from "~~/auth";
 import { appRouter } from "../api/trpc";
 import { createContext } from "../api/trpc/context";
 import { D1DbMiddleware } from "./middleware";
-import { photoUploadRoutes } from "./routes/photo-upload";
 import type { AppType } from "./types";
 
 declare module "react-router" {
@@ -73,9 +72,6 @@ app.all("/api/trpc/*", async (c) => {
 		},
 	});
 });
-
-// Photo upload routes
-app.route("/api", photoUploadRoutes);
 
 // Authentication routes
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
