@@ -307,3 +307,26 @@ export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;
 export type Winner = typeof winners.$inferSelect;
 export type NewWinner = typeof winners.$inferInsert;
+
+// Photo with relations type for API responses
+export type PhotoWithRelations = Photo & {
+	user?: {
+		id?: string;
+		name?: string;
+	};
+	competition?: {
+		id?: string;
+		title?: string;
+		status?: string;
+		endDate?: Date | null;
+	};
+	category?: {
+		id?: string;
+		name?: string;
+		maxPhotosPerUser?: number;
+	};
+	moderatedByUser?: {
+		id?: string;
+		name?: string;
+	};
+};

@@ -95,8 +95,8 @@
 	body {
 		@apply bg-white dark:bg-gray-950 font-sans;
 
-		@media (prefers-color-scheme: dark) {
-			color-scheme: dark;
+		@media (prefers-color-scheme: light) {
+			color-scheme: light;
 		}
 	}
 }
@@ -269,11 +269,11 @@
 	border: 1.478px solid var(--input-border);
 }
 
-p,
+/* p,
 span,
 label {
 	color: var(--text);
-}
+} */
 
 /* Date picker custom styles */
 input[type="date"]::-webkit-calendar-picker-indicator {

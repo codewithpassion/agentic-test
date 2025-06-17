@@ -5,43 +5,8 @@
 import { useNavigate } from "react-router";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
 import { cn } from "~/lib/utils";
+import type { PhotoWithRelations } from "../../../api/database/schema";
 import { SubmissionCard } from "./submission-card";
-
-// Photo with relations type
-export interface PhotoWithRelations {
-	id: string;
-	title: string;
-	description: string;
-	filePath: string;
-	fileName: string;
-	fileSize: number;
-	mimeType: string;
-	width: number;
-	height: number;
-	status: "pending" | "approved" | "rejected" | "deleted";
-	location: string;
-	dateTaken: Date | null;
-	cameraMake?: string | null;
-	cameraModel?: string | null;
-	lens?: string | null;
-	focalLength?: string | null;
-	aperture?: string | null;
-	shutterSpeed?: string | null;
-	iso?: string | null;
-	createdAt: Date | null;
-	updatedAt: Date | null;
-	competition: {
-		id: string;
-		title: string;
-		status: string;
-		endDate: Date | null;
-	};
-	category: {
-		id: string;
-		name: string;
-		maxPhotosPerUser: number;
-	};
-}
 
 export interface SubmissionsGridProps {
 	photos: PhotoWithRelations[];

@@ -26,7 +26,7 @@
 		"baseUrl": ".",
 		"rootDirs": [".", "./.react-router/types"],
 		"paths": {
-			"~/*": ["./app/*"],
+			"~/*": ["./app/*", "./api/*"],
 			"~~/*": ["./workers/*"]
 		},
 		"esModuleInterop": true,

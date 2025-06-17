@@ -71,12 +71,12 @@ const navigationItems: NavItem[] = [
 			},
 		],
 	},
-	{
-		icon: Flag,
-		label: "Reports",
-		href: "/admin/reports",
-		permission: "view_reports",
-	},
+	// {
+	// 	icon: Flag,
+	// 	label: "Reports",
+	// 	href: "/admin/reports",
+	// 	permission: "view_reports",
+	// },
 	{
 		icon: Users,
 		label: "User Management",
@@ -95,12 +95,12 @@ const navigationItems: NavItem[] = [
 			},
 		],
 	},
-	{
-		icon: Settings,
-		label: "Settings",
-		href: "/admin/settings",
-		role: "superadmin",
-	},
+	// {
+	// 	icon: Settings,
+	// 	label: "Settings",
+	// 	href: "/admin/settings",
+	// 	role: "superadmin",
+	// },
 ];
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {

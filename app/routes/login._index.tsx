@@ -14,7 +14,7 @@ export default function Login() {
 
 	const submit = async ({ email }: { email: string }) => {
 		signIn.magicLink(
-			{ email, callbackURL: `${window.location.origin}/feed` },
+			{ email, callbackURL: `${window.location.origin}/` },
 			{
 				onSuccess: () => {
 					console.log("Success");

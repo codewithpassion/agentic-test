@@ -15,8 +15,8 @@ export function AppLayout({ children, heading, subHeading }: LayoutProps) {
 				<div className="z-10 relative">
 					<div className={"justify-center mb-6 flex"}>
 						<div className="w-16 h-16 flex items-center justify-center">
-							<Link to="/feed">
-								<Image alt="Feed" src="https://placehold.co/64" />
+							<Link to="">
+								<Image alt="Home" src="https://placehold.co/64" />
 							</Link>
 						</div>
 					</div>

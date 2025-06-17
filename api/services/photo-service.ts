@@ -2,26 +2,7 @@ import type { D1Database } from "@cloudflare/workers-types";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { createDb } from "../database/db";
 import { categories, competitions, photos, user } from "../database/schema";
-import type { NewPhoto, Photo } from "../database/schema";
-
-type PhotoWithRelations = Photo & {
-	user?: {
-		id?: string;
-		name?: string;
-	};
-	competition?: {
-		id?: string;
-		title?: string;
-	};
-	category?: {
-		id?: string;
-		name?: string;
-	};
-	moderatedByUser?: {
-		id?: string;
-		name?: string;
-	};
-};
+import type { NewPhoto, Photo, PhotoWithRelations } from "../database/schema";
 import { generateId } from "../lib/utils";
 import { PhotoFileStore } from "./photo-file-store";
 import type { PhotoFile } from "./photo-file-store";
@@ -590,6 +571,7 @@ export class PhotoService {
 			.limit(limit)
 			.offset(offset);
 
+		// Photos already have the correct filePath for serving
 		return { photos: photoList, total };
 	}
 
@@ -625,6 +607,7 @@ export class PhotoService {
 			.limit(limit)
 			.offset(offset);
 
+		// Photos already have the correct filePath for serving
 		return { photos: photoList, total };
 	}
 

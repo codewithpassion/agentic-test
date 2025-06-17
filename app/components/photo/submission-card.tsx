@@ -17,7 +17,7 @@ import {
 import { useState } from "react";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
-import type { PhotoWithRelations } from "./submissions-grid";
+import type { PhotoWithRelations } from "../../../api/database/schema";
 
 export interface SubmissionCardProps {
 	photo: PhotoWithRelations;
@@ -113,7 +113,7 @@ export function SubmissionCard({
 
 	// Check if editing is allowed
 	const canEdit =
-		photo.competition.status === "active" && photo.status !== "rejected";
+		photo.competition?.status === "active" && photo.status !== "rejected";
 
 	const statusInfo = getStatusInfo(photo.status);
 	const StatusIcon = statusInfo.icon;
@@ -155,9 +155,9 @@ export function SubmissionCard({
 									{photo.description}
 								</p>
 								<div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-									<span>{photo.competition.title}</span>
+									<span>{photo.competition?.title || ""}</span>
 									<span>•</span>
-									<span>{photo.category.name}</span>
+									<span>{photo.category?.name || ""}</span>
 									<span>•</span>
 									<span>{formatDate(photo.createdAt)}</span>
 								</div>
@@ -341,7 +341,7 @@ export function SubmissionCard({
 
 				{/* Competition and Category */}
 				<p className="text-sm text-gray-600 mb-2">
-					{photo.competition.title} • {photo.category.name}
+					{photo.competition?.title || ""} • {photo.category?.name || ""}
 				</p>
 
 				{/* Metadata */}
