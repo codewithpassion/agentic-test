@@ -338,7 +338,7 @@ export const photosRouter = router({
 		.input(
 			z.object({
 				photoId: z.string(),
-				action: z.enum(["approve", "reject"]),
+				action: z.enum(["approve", "reject", "reset"]),
 				reason: z.string().optional(),
 			}),
 		)
@@ -361,6 +361,35 @@ export const photosRouter = router({
 					code: "BAD_REQUEST",
 					message:
 						error instanceof Error ? error.message : "Failed to moderate photo",
+				});
+			}
+		}),
+
+	/**
+	 * Admin: Get all photos for administration
+	 */
+	getAllForAdmin: adminProcedure
+		.input(
+			z.object({
+				limit: z.number().min(1).max(100).default(50),
+				offset: z.number().min(0).default(0),
+				status: z
+					.enum(["all", "pending", "approved", "rejected"])
+					.default("all"),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			try {
+				const photoService = new PhotoService(
+					ctx.env.DB,
+					ctx.env.PHOTO_STORAGE,
+				);
+				return await photoService.getAllPhotosForAdmin(input);
+			} catch (error) {
+				console.error("Get all photos for admin error:", error);
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Failed to fetch photos for admin",
 				});
 			}
 		}),

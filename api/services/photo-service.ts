@@ -1,8 +1,27 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { createDb } from "../database/db";
-import { categories, competitions, photos } from "../database/schema";
+import { categories, competitions, photos, user } from "../database/schema";
 import type { NewPhoto, Photo } from "../database/schema";
+
+type PhotoWithRelations = Photo & {
+	user?: {
+		id?: string;
+		name?: string;
+	};
+	competition?: {
+		id?: string;
+		title?: string;
+	};
+	category?: {
+		id?: string;
+		name?: string;
+	};
+	moderatedByUser?: {
+		id?: string;
+		name?: string;
+	};
+};
 import { generateId } from "../lib/utils";
 import { PhotoFileStore } from "./photo-file-store";
 import type { PhotoFile } from "./photo-file-store";
@@ -548,7 +567,7 @@ export class PhotoService {
 	async getPhotosByCategory(
 		categoryId: string,
 		options: { limit?: number; offset?: number } = {},
-	): Promise<{ photos: Photo[]; total: number }> {
+	): Promise<{ photos: PhotoWithRelations[]; total: number }> {
 		const { limit = 20, offset = 0 } = options;
 
 		const whereClause = and(
@@ -580,7 +599,7 @@ export class PhotoService {
 	async getPhotosByCompetition(
 		competitionId: string,
 		options: { categoryId?: string; limit?: number; offset?: number } = {},
-	): Promise<{ photos: Photo[]; total: number }> {
+	): Promise<{ photos: PhotoWithRelations[]; total: number }> {
 		const { categoryId, limit = 20, offset = 0 } = options;
 
 		const conditions = [
@@ -654,7 +673,7 @@ export class PhotoService {
 	async moderatePhoto(
 		photoId: string,
 		moderatorId: string,
-		action: "approve" | "reject",
+		action: "approve" | "reject" | "reset",
 		reason?: string,
 	): Promise<Photo> {
 		const photo = await this.getPhotoById(photoId);
@@ -662,18 +681,23 @@ export class PhotoService {
 			throw new Error("Photo not found");
 		}
 
-		if (photo.status !== "pending") {
-			throw new Error("Photo has already been moderated");
+		let newStatus: "pending" | "approved" | "rejected";
+		if (action === "approve") {
+			newStatus = "approved";
+		} else if (action === "reject") {
+			newStatus = "rejected";
+		} else if (action === "reset") {
+			newStatus = "pending";
+		} else {
+			throw new Error("Invalid action");
 		}
-
-		const newStatus = action === "approve" ? "approved" : "rejected";
 
 		await this.db
 			.update(photos)
 			.set({
 				status: newStatus,
-				moderatedBy: moderatorId,
-				moderatedAt: new Date(),
+				moderatedBy: action === "reset" ? null : moderatorId,
+				moderatedAt: action === "reset" ? null : new Date(),
 				rejectionReason: action === "reject" ? reason : null,
 				updatedAt: new Date(),
 			})
@@ -692,7 +716,7 @@ export class PhotoService {
 	 */
 	async getPhotosForModeration(
 		options: { limit?: number; offset?: number } = {},
-	): Promise<{ photos: Photo[]; total: number }> {
+	): Promise<{ photos: PhotoWithRelations[]; total: number }> {
 		const { limit = 20, offset = 0 } = options;
 
 		const whereClause = eq(photos.status, "pending");
@@ -703,16 +727,253 @@ export class PhotoService {
 			.from(photos)
 			.where(whereClause);
 
-		// Get photos
+		// Get photos with relations
 		const photoList = await this.db
-			.select()
+			.select({
+				// Photo fields
+				id: photos.id,
+				userId: photos.userId,
+				competitionId: photos.competitionId,
+				categoryId: photos.categoryId,
+				title: photos.title,
+				description: photos.description,
+				filePath: photos.filePath,
+				fileName: photos.fileName,
+				fileSize: photos.fileSize,
+				mimeType: photos.mimeType,
+				width: photos.width,
+				height: photos.height,
+				status: photos.status,
+				dateTaken: photos.dateTaken,
+				location: photos.location,
+				cameraMake: photos.cameraMake,
+				cameraModel: photos.cameraModel,
+				lens: photos.lens,
+				focalLength: photos.focalLength,
+				aperture: photos.aperture,
+				shutterSpeed: photos.shutterSpeed,
+				iso: photos.iso,
+				createdAt: photos.createdAt,
+				updatedAt: photos.updatedAt,
+				moderatedBy: photos.moderatedBy,
+				moderatedAt: photos.moderatedAt,
+				rejectionReason: photos.rejectionReason,
+				user: {
+					id: user.id,
+					name: user.name,
+				},
+				competition: {
+					id: competitions.id,
+					title: competitions.title,
+				},
+				category: {
+					id: categories.id,
+					name: categories.name,
+				},
+				moderatedByUser: {
+					id: sql`moderator.id`,
+					name: sql`moderator.name`,
+				},
+			})
 			.from(photos)
+			.leftJoin(user, eq(user.id, photos.userId))
+			.leftJoin(competitions, eq(competitions.id, photos.competitionId))
+			.leftJoin(categories, eq(categories.id, photos.categoryId))
+			.leftJoin(
+				sql`user AS moderator`,
+				sql`moderator.id = ${photos.moderatedBy}`,
+			)
 			.where(whereClause)
 			.orderBy(asc(photos.createdAt)) // Oldest first for moderation
 			.limit(limit)
 			.offset(offset);
 
-		return { photos: photoList, total };
+		// Transform to expected format
+		const transformedPhotos = photoList.map((row) => ({
+			id: row.id,
+			userId: row.userId,
+			competitionId: row.competitionId,
+			categoryId: row.categoryId,
+			title: row.title,
+			description: row.description,
+			filePath: row.filePath,
+			fileName: row.fileName,
+			fileSize: row.fileSize,
+			mimeType: row.mimeType,
+			width: row.width,
+			height: row.height,
+			status: row.status,
+			dateTaken: row.dateTaken,
+			location: row.location,
+			cameraMake: row.cameraMake,
+			cameraModel: row.cameraModel,
+			lens: row.lens,
+			focalLength: row.focalLength,
+			aperture: row.aperture,
+			shutterSpeed: row.shutterSpeed,
+			iso: row.iso,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			moderatedBy: row.moderatedBy,
+			moderatedAt: row.moderatedAt,
+			rejectionReason: row.rejectionReason,
+			user: {
+				id: row.user?.id,
+				name: row.user?.name,
+			},
+			competition: {
+				id: row.competition?.id,
+				title: row.competition?.title,
+			},
+			category: {
+				id: row.category?.id,
+				name: row.category?.name,
+			},
+			moderatedByUser: {
+				id: row.moderatedByUser?.id as string | undefined,
+				name: row.moderatedByUser?.name as string | undefined,
+			},
+		}));
+
+		return { photos: transformedPhotos, total };
+	}
+
+	/**
+	 * Admin: Get all photos for administration
+	 */
+	async getAllPhotosForAdmin(
+		options: {
+			limit?: number;
+			offset?: number;
+			status?: "all" | "pending" | "approved" | "rejected";
+		} = {},
+	): Promise<{ photos: PhotoWithRelations[]; total: number }> {
+		const { limit = 50, offset = 0, status = "all" } = options;
+
+		// Build where clause based on status filter
+		// biome-ignore lint/suspicious/noExplicitAny: Complex drizzle query types
+		let whereClause: any;
+		if (status === "all") {
+			whereClause = sql`${photos.status} != 'deleted'`; // Show all except deleted
+		} else {
+			whereClause = eq(photos.status, status);
+		}
+
+		// Get total count
+		const [{ total }] = await this.db
+			.select({ total: count() })
+			.from(photos)
+			.where(whereClause);
+
+		// Get photos with all relations
+		const photoList = await this.db
+			.select({
+				// Photo fields
+				id: photos.id,
+				userId: photos.userId,
+				competitionId: photos.competitionId,
+				categoryId: photos.categoryId,
+				title: photos.title,
+				description: photos.description,
+				filePath: photos.filePath,
+				fileName: photos.fileName,
+				fileSize: photos.fileSize,
+				mimeType: photos.mimeType,
+				width: photos.width,
+				height: photos.height,
+				status: photos.status,
+				dateTaken: photos.dateTaken,
+				location: photos.location,
+				cameraMake: photos.cameraMake,
+				cameraModel: photos.cameraModel,
+				lens: photos.lens,
+				focalLength: photos.focalLength,
+				aperture: photos.aperture,
+				shutterSpeed: photos.shutterSpeed,
+				iso: photos.iso,
+				createdAt: photos.createdAt,
+				updatedAt: photos.updatedAt,
+				moderatedBy: photos.moderatedBy,
+				moderatedAt: photos.moderatedAt,
+				rejectionReason: photos.rejectionReason,
+				user: {
+					id: user.id,
+					name: user.name,
+				},
+				competition: {
+					id: competitions.id,
+					title: competitions.title,
+				},
+				category: {
+					id: categories.id,
+					name: categories.name,
+				},
+				moderatedByUser: {
+					id: sql`moderator.id`,
+					name: sql`moderator.name`,
+				},
+			})
+			.from(photos)
+			.leftJoin(user, eq(user.id, photos.userId))
+			.leftJoin(competitions, eq(competitions.id, photos.competitionId))
+			.leftJoin(categories, eq(categories.id, photos.categoryId))
+			.leftJoin(
+				sql`user AS moderator`,
+				sql`moderator.id = ${photos.moderatedBy}`,
+			)
+			.where(whereClause)
+			.orderBy(desc(photos.createdAt)) // Newest first for admin view
+			.limit(limit)
+			.offset(offset);
+
+		// Transform to expected format
+		const transformedPhotos = photoList.map((row) => ({
+			id: row.id,
+			userId: row.userId,
+			competitionId: row.competitionId,
+			categoryId: row.categoryId,
+			title: row.title,
+			description: row.description,
+			filePath: row.filePath,
+			fileName: row.fileName,
+			fileSize: row.fileSize,
+			mimeType: row.mimeType,
+			width: row.width,
+			height: row.height,
+			status: row.status,
+			dateTaken: row.dateTaken,
+			location: row.location,
+			cameraMake: row.cameraMake,
+			cameraModel: row.cameraModel,
+			lens: row.lens,
+			focalLength: row.focalLength,
+			aperture: row.aperture,
+			shutterSpeed: row.shutterSpeed,
+			iso: row.iso,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			moderatedBy: row.moderatedBy,
+			moderatedAt: row.moderatedAt,
+			rejectionReason: row.rejectionReason,
+			user: {
+				id: row.user?.id,
+				name: row.user?.name,
+			},
+			competition: {
+				id: row.competition?.id,
+				title: row.competition?.title,
+			},
+			category: {
+				id: row.category?.id,
+				name: row.category?.name,
+			},
+			moderatedByUser: {
+				id: row.moderatedByUser?.id as string | undefined,
+				name: row.moderatedByUser?.name as string | undefined,
+			},
+		}));
+
+		return { photos: transformedPhotos, total };
 	}
 
 	/**

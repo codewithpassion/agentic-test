@@ -40,6 +40,7 @@ export function AdminDashboard() {
 			icon: Trophy,
 			color: "text-blue-600",
 			bgColor: "bg-blue-50",
+			link: "/admin/competitions",
 		},
 		{
 			title: "Pending Photos",
@@ -47,21 +48,22 @@ export function AdminDashboard() {
 			icon: Clock,
 			color: "text-orange-600",
 			bgColor: "bg-orange-50",
+			link: "/admin/moderation/pending",
 		},
-		{
-			title: "Today's Photos",
-			value: metrics?.today.newPhotos || 0,
-			icon: Image,
-			color: "text-green-600",
-			bgColor: "bg-green-50",
-		},
-		{
-			title: "Open Reports",
-			value: metrics?.pending.reports || 0,
-			icon: Flag,
-			color: "text-red-600",
-			bgColor: "bg-red-50",
-		},
+		// {
+		// 	title: "Today's Photos",
+		// 	value: metrics?.today.newPhotos || 0,
+		// 	icon: Image,
+		// 	color: "text-green-600",
+		// 	bgColor: "bg-green-50",
+		// },
+		// {
+		// 	title: "Open Reports",
+		// 	value: metrics?.pending.reports || 0,
+		// 	icon: Flag,
+		// 	color: "text-red-600",
+		// 	bgColor: "bg-red-50",
+		// },
 	];
 
 	const quickActions = [
@@ -171,24 +173,36 @@ export function AdminDashboard() {
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 				{quickStats.map((stat) => {
 					const Icon = stat.icon;
-					return (
-						<Card key={stat.title}>
-							<CardContent className="p-6">
-								<div className="flex items-center justify-between">
-									<div>
-										<p className="text-sm font-medium text-gray-600">
-											{stat.title}
-										</p>
-										<p className="text-2xl font-bold text-gray-900">
-											{stat.value}
-										</p>
-									</div>
-									<div className={cn("p-3 rounded-lg", stat.bgColor)}>
-										<Icon className={cn("h-6 w-6", stat.color)} />
-									</div>
+					const cardContent = (
+						<CardContent className="p-6">
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium text-gray-600">
+										{stat.title}
+									</p>
+									<p className="text-2xl font-bold text-gray-900">
+										{stat.value}
+									</p>
 								</div>
-							</CardContent>
-						</Card>
+								<div className={cn("p-3 rounded-lg", stat.bgColor)}>
+									<Icon className={cn("h-6 w-6", stat.color)} />
+								</div>
+							</div>
+						</CardContent>
+					);
+
+					return (
+						<div key={stat.title} className="h-full">
+							{stat.link ? (
+								<Link to={stat.link} className="block h-full">
+									<Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+										{cardContent}
+									</Card>
+								</Link>
+							) : (
+								<Card className="h-full">{cardContent}</Card>
+							)}
+						</div>
 					);
 				})}
 			</div>
@@ -245,36 +259,40 @@ export function AdminDashboard() {
 								{competitionsQuery.data
 									.slice(0, 5)
 									.map((competition: Competition) => (
-										<div
+										<Link
 											key={competition.id}
-											className="flex items-center justify-between p-3 border rounded-lg"
+											to={`/admin/competitions/${competition.id}`}
 										>
-											<div>
-												<h4 className="font-medium">{competition.title}</h4>
-												<p className="text-sm text-gray-500">
-													{new Date(competition.createdAt).toLocaleDateString()}
-												</p>
-											</div>
-											<Badge
-												variant={
-													competition.status === "active"
-														? "active"
+											<div className="flex items-center justify-between p-3 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
+												<div>
+													<h4 className="font-medium">{competition.title}</h4>
+													<p className="text-sm text-gray-500">
+														{new Date(
+															competition.createdAt,
+														).toLocaleDateString()}
+													</p>
+												</div>
+												<Badge
+													variant={
+														competition.status === "active"
+															? "active"
+															: competition.status === "draft"
+																? "draft"
+																: competition.status === "completed"
+																	? "completed"
+																	: "inactive"
+													}
+												>
+													{competition.status === "active"
+														? "Active"
 														: competition.status === "draft"
-															? "draft"
+															? "Draft"
 															: competition.status === "completed"
-																? "completed"
-																: "inactive"
-												}
-											>
-												{competition.status === "active"
-													? "Active"
-													: competition.status === "draft"
-														? "Draft"
-														: competition.status === "completed"
-															? "Completed"
-															: "Inactive"}
-											</Badge>
-										</div>
+																? "Completed"
+																: "Inactive"}
+												</Badge>
+											</div>
+										</Link>
 									))}
 							</div>
 						) : (
