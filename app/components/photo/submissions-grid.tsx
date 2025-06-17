@@ -66,8 +66,7 @@ export function SubmissionsGrid({
 	};
 
 	const handleView = (photoId: string) => {
-		// For now, redirect to edit page - could be a modal in the future
-		navigate(`/submissions/${photoId}/edit`);
+		navigate(`/submissions/${photoId}`);
 	};
 
 	const handleDelete = (photoId: string) => {
@@ -97,9 +96,6 @@ export function SubmissionsGrid({
 					Showing {photos.length} of {totalCount} submission
 					{totalCount !== 1 ? "s" : ""}
 				</p>
-				<div className="text-sm text-gray-500">
-					{viewMode === "grid" ? "Grid" : "List"} view
-				</div>
 			</div>
 
 			{/* Grid/List Container */}

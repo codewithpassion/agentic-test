@@ -100,36 +100,6 @@ export default function MySubmissions() {
 								Manage your photo submissions across all competitions
 							</p>
 						</div>
-
-						{/* View Mode Toggle */}
-						<div className="flex items-center space-x-2">
-							<button
-								type="button"
-								onClick={toggleViewMode}
-								className={cn(
-									"p-2 rounded-lg transition-colors",
-									viewMode === "grid"
-										? "bg-primary text-white"
-										: "bg-white text-gray-600 hover:bg-gray-50",
-								)}
-								title="Grid view"
-							>
-								<Grid className="h-5 w-5" />
-							</button>
-							<button
-								type="button"
-								onClick={toggleViewMode}
-								className={cn(
-									"p-2 rounded-lg transition-colors",
-									viewMode === "list"
-										? "bg-primary text-white"
-										: "bg-white text-gray-600 hover:bg-gray-50",
-								)}
-								title="List view"
-							>
-								<List className="h-5 w-5" />
-							</button>
-						</div>
 					</div>
 				</div>
 
@@ -149,47 +119,79 @@ export default function MySubmissions() {
 				</div>
 
 				{/* Search and Filters */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-lg font-semibold text-gray-900">
-							Find Submissions
-						</h2>
-						<button
-							type="button"
-							onClick={() => setShowFilters(!showFilters)}
-							className={cn(
-								"flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors",
-								showFilters
-									? "bg-primary text-white"
-									: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-							)}
-						>
-							<Filter className="h-4 w-4" />
-							<span>Filters</span>
-						</button>
-					</div>
+				{false && (
+					<div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-lg font-semibold text-gray-900">
+								Find Submissions
+							</h2>
+							<button
+								type="button"
+								onClick={() => setShowFilters(!showFilters)}
+								className={cn(
+									"flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors",
+									showFilters
+										? "bg-primary text-white"
+										: "bg-gray-100 text-gray-700 hover:bg-gray-200",
+								)}
+							>
+								<Filter className="h-4 w-4" />
+								<span>Filters</span>
+							</button>
+						</div>
 
-					{/* Search Bar */}
-					<div className="relative mb-4">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-						<input
-							type="text"
-							placeholder="Search by title or description..."
-							value={filters.search || ""}
-							onChange={(e) =>
-								handleFiltersChange({ ...filters, search: e.target.value })
-							}
-							className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
-						/>
-					</div>
+						{/* Search Bar */}
+						<div className="relative mb-4">
+							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+							<input
+								type="text"
+								placeholder="Search by title or description..."
+								value={filters.search || ""}
+								onChange={(e) =>
+									handleFiltersChange({ ...filters, search: e.target.value })
+								}
+								className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+							/>
+						</div>
 
-					{/* Filters Panel */}
-					{showFilters && (
-						<SubmissionFilters
-							selectedFilters={filters}
-							onFiltersChange={handleFiltersChange}
-						/>
-					)}
+						{/* Filters Panel */}
+						{showFilters && (
+							<SubmissionFilters
+								selectedFilters={filters}
+								onFiltersChange={handleFiltersChange}
+							/>
+						)}
+					</div>
+				)}
+
+				{/* View Mode Toggle */}
+				<div className="flex items-center justify-end space-x-2 mb-4">
+					<button
+						type="button"
+						onClick={toggleViewMode}
+						className={cn(
+							"p-2 rounded-lg transition-colors",
+							viewMode === "grid"
+								? "bg-primary text-white"
+								: "bg-white text-gray-600 hover:bg-gray-50",
+						)}
+						title="Grid view"
+					>
+						<Grid className="h-5 w-5" />
+					</button>
+					<button
+						type="button"
+						onClick={toggleViewMode}
+						className={cn(
+							"p-2 rounded-lg transition-colors",
+							viewMode === "list"
+								? "bg-primary text-white"
+								: "bg-white text-gray-600 hover:bg-gray-50",
+						)}
+						title="List view"
+					>
+						<List className="h-5 w-5" />
+					</button>
 				</div>
 
 				{/* Submissions Grid/List */}
