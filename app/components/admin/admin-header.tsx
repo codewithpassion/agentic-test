@@ -68,7 +68,12 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 				{/* Right side - Actions and user menu */}
 				<div className="flex items-center gap-4">
 					{/* View site link */}
-					<Button variant="outline" size="sm" asChild>
+					<Button
+						variant="outline"
+						size="sm"
+						asChild
+						className="border-gray-300 text-gray-700 hover:bg-gray-50"
+					>
 						<Link to="/">
 							<Home className="h-4 w-4 mr-2" />
 							View Site
@@ -76,7 +81,11 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 					</Button>
 
 					{/* Notifications */}
-					<Button variant="ghost" size="sm" className="relative">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="relative text-gray-600 hover:text-gray-900"
+					>
 						<Bell className="h-5 w-5" />
 						{/* Notification badge - placeholder for future implementation */}
 						<Badge
@@ -90,7 +99,10 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 					{/* User menu */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="ghost" className="flex items-center gap-2 p-2">
+							<Button
+								variant="ghost"
+								className="flex items-center gap-4 px-4 py-5 hover:bg-gray-100 border border-gray-300 rounded-md"
+							>
 								<Avatar className="h-8 w-8">
 									<AvatarImage src={user?.image || undefined} />
 									<AvatarFallback className="text-sm">
@@ -98,12 +110,12 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 									</AvatarFallback>
 								</Avatar>
 								<div className="text-left hidden md:block">
-									<div className="text-sm font-medium">
+									<div className="text-sm font-medium text-gray-900">
 										{user?.name || "Admin"}
 									</div>
 									<div className="flex items-center gap-2">
 										<span className="text-xs text-gray-500">{user?.email}</span>
-										<Badge
+										{/* <Badge
 											variant="secondary"
 											className={cn(
 												"text-xs",
@@ -117,31 +129,33 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 											{Array.isArray(user?.roles) && user?.roles.length > 0
 												? user.roles[0]
 												: "user"}
-										</Badge>
+										</Badge> */}
 									</div>
 								</div>
 							</Button>
 						</DropdownMenuTrigger>
 
 						<DropdownMenuContent align="end" className="w-56">
-							<DropdownMenuLabel>My Account</DropdownMenuLabel>
-							<DropdownMenuSeparator />
+							{/* <DropdownMenuLabel>My Account</DropdownMenuLabel>
+							<DropdownMenuSeparator /> */}
 
+							{/* Disabled for now
 							<DropdownMenuItem asChild>
 								<Link to="/admin/profile">
 									<User className="h-4 w-4 mr-2" />
 									Profile Settings
 								</Link>
-							</DropdownMenuItem>
+							</DropdownMenuItem> */}
 
+							{/* Disabled for now
 							<DropdownMenuItem asChild>
 								<Link to="/admin/preferences">
 									<Settings className="h-4 w-4 mr-2" />
 									Preferences
 								</Link>
-							</DropdownMenuItem>
+							</DropdownMenuItem> */}
 
-							<DropdownMenuSeparator />
+							{/* <DropdownMenuSeparator /> */}
 
 							<DropdownMenuItem asChild>
 								<Link to="/logout">
