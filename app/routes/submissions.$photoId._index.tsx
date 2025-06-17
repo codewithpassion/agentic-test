@@ -118,7 +118,8 @@ export default function PhotoDisplay() {
 									{photo.title}
 								</h1>
 								<p className="text-lg text-gray-600 mb-4">
-									{photo.competition.title} • {photo.category.name}
+									{photo.competition?.title || ""} •{" "}
+									{photo.category?.name || ""}
 								</p>
 								{photo.description && (
 									<p className="text-gray-700 leading-relaxed">
@@ -305,7 +306,7 @@ export default function PhotoDisplay() {
 											: "Unknown"}
 									</span>
 								</div>
-								{photo.competition.endDate && (
+								{photo.competition?.endDate && (
 									<div className="flex justify-between">
 										<span className="text-gray-600">Competition Ends</span>
 										<span className="font-medium">

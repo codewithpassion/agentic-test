@@ -118,7 +118,7 @@ export default function EditSubmission() {
 
 	// Check if editing is allowed
 	const canEdit =
-		photo.competition.status === "active" && photo.status !== "rejected";
+		photo.competition?.status === "active" && photo.status !== "rejected";
 
 	if (!canEdit) {
 		return (
@@ -186,7 +186,8 @@ export default function EditSubmission() {
 									Edit Submission
 								</h1>
 								<p className="text-gray-600 mb-4">
-									{photo.competition.title} • {photo.category.name}
+									{photo.competition?.title || ""} •{" "}
+									{photo.category?.name || ""}
 								</p>
 
 								{/* Status and warnings */}
@@ -208,7 +209,7 @@ export default function EditSubmission() {
 												: "Under Review"}
 									</span>
 
-									{photo.competition.endDate && (
+									{photo.competition?.endDate && (
 										<span className="text-sm text-gray-500">
 											Competition ends:{" "}
 											{new Date(photo.competition.endDate).toLocaleDateString()}

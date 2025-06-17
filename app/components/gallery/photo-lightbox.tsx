@@ -8,7 +8,6 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { cn } from "~/lib/utils";
 import type { PhotoWithRelations } from "../../../api/database/schema";
 
 interface PhotoLightboxProps {
@@ -27,8 +26,11 @@ export function PhotoLightbox({
 	onNavigate,
 }: PhotoLightboxProps) {
 	const [zoom, setZoom] = useState(1);
-	const [showMetadata, setShowMetadata] = useState(false);
 	const currentPhoto = photos[currentIndex];
+
+	useEffect(() => {
+		console.log("Current photo:", currentPhoto);
+	}, [currentPhoto]);
 
 	const handlePrevious = useCallback(() => {
 		const newIndex = currentIndex > 0 ? currentIndex - 1 : photos.length - 1;
@@ -83,11 +85,6 @@ export function PhotoLightbox({
 					event.preventDefault();
 					handleZoomReset();
 					break;
-				case "i":
-				case "I":
-					event.preventDefault();
-					setShowMetadata((prev) => !prev);
-					break;
 			}
 		},
 		[
@@ -121,178 +118,189 @@ export function PhotoLightbox({
 	if (!isOpen || !currentPhoto) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center">
-			{/* Top Controls */}
-			<div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-				<div className="flex items-center space-x-4">
-					<span className="text-white text-sm">
-						{currentIndex + 1} of {photos.length}
-					</span>
-					<h2 className="text-white text-lg font-medium">
-						{currentPhoto.title}
-					</h2>
-				</div>
-
-				<div className="flex items-center space-x-2">
+		<div className="fixed inset-0 z-50 bg-white flex">
+			{/* Left side - Image */}
+			<div className="flex-1 relative bg-gray-100">
+				{/* Top controls on image side */}
+				<div className="absolute top-6 left-6 z-10">
 					<button
 						type="button"
-						onClick={() => setShowMetadata(!showMetadata)}
-						className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
-						title="Toggle info (I)"
+						onClick={onClose}
+						className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors"
+						title="Close (Esc)"
 					>
-						<Info size={20} />
+						<X size={20} />
 					</button>
+				</div>
+
+				{/* Zoom controls */}
+				<div className="absolute top-6 right-6 flex items-center space-x-2 z-10">
 					<button
 						type="button"
 						onClick={handleZoomOut}
-						className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+						className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors"
 						title="Zoom out (-)"
 					>
-						<ZoomOut size={20} />
+						<ZoomOut size={18} />
 					</button>
 					<button
 						type="button"
 						onClick={handleZoomReset}
-						className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+						className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors"
 						title="Reset zoom (0)"
 					>
-						<RotateCcw size={20} />
+						<RotateCcw size={18} />
 					</button>
 					<button
 						type="button"
 						onClick={handleZoomIn}
-						className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+						className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors"
 						title="Zoom in (+)"
 					>
-						<ZoomIn size={20} />
+						<ZoomIn size={18} />
 					</button>
-					<button
-						type="button"
-						onClick={onClose}
-						className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
-						title="Close (Esc)"
-					>
-						<X size={24} />
-					</button>
+				</div>
+
+				{/* Navigation Arrows */}
+				{photos.length > 1 && (
+					<>
+						<button
+							type="button"
+							onClick={handlePrevious}
+							className="absolute left-6 top-1/2 -translate-y-1/2 p-3 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors z-10"
+							title="Previous (←)"
+						>
+							<ChevronLeft size={24} />
+						</button>
+						<button
+							type="button"
+							onClick={handleNext}
+							className="absolute right-6 top-1/2 -translate-y-1/2 p-3 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors z-10"
+							title="Next (→)"
+						>
+							<ChevronRight size={24} />
+						</button>
+					</>
+				)}
+
+				{/* Main Image Container */}
+				<div className="h-full flex items-center justify-center p-8">
+					<div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+						<img
+							src={`/api/photos/serve/${encodeURIComponent(currentPhoto.filePath)}`}
+							alt={currentPhoto.title}
+							className="max-w-full max-h-full object-contain transition-transform duration-200 shadow-2xl"
+							style={{
+								transform: `scale(${zoom})`,
+								maxWidth: zoom > 1 ? "none" : "100%",
+								maxHeight: zoom > 1 ? "none" : "100%",
+							}}
+							draggable={false}
+						/>
+					</div>
 				</div>
 			</div>
 
-			{/* Navigation Arrows */}
-			{photos.length > 1 && (
-				<>
-					<button
-						type="button"
-						onClick={handlePrevious}
-						className="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors z-10"
-						title="Previous (←)"
-					>
-						<ChevronLeft size={32} />
-					</button>
-					<button
-						type="button"
-						onClick={handleNext}
-						className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors z-10"
-						title="Next (→)"
-					>
-						<ChevronRight size={32} />
-					</button>
-				</>
-			)}
-
-			{/* Main Image */}
-			<div
-				className="relative max-w-full max-h-full overflow-hidden cursor-grab active:cursor-grabbing"
-				onClick={(e) => {
-					if (e.target === e.currentTarget) {
-						onClose();
-					}
-				}}
-				onKeyDown={(e) => {
-					if (
-						(e.key === "Enter" || e.key === " ") &&
-						e.target === e.currentTarget
-					) {
-						onClose();
-					}
-				}}
-			>
-				<img
-					src={`/api/photos/serve/${encodeURIComponent(currentPhoto.filePath)}`}
-					alt={currentPhoto.title}
-					className="max-w-full max-h-full object-contain transition-transform duration-200"
-					style={{ transform: `scale(${zoom})` }}
-					draggable={false}
-				/>
-			</div>
-
-			{/* Metadata Panel */}
-			{showMetadata && (
-				<div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-80 text-white p-6 rounded-lg backdrop-blur-sm max-w-md ml-auto">
-					<h3 className="text-xl font-semibold mb-3">{currentPhoto.title}</h3>
-
+			{/* Right side - Metadata Panel */}
+			<div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+				{/* Header */}
+				<div className="p-6 border-b border-gray-200">
+					<div className="mb-2">
+						<span className="text-sm text-gray-500">
+							{currentIndex + 1} of {photos.length}
+						</span>
+					</div>
+					<h2 className="text-xl font-semibold text-gray-900 leading-tight">
+						{currentPhoto.title}
+					</h2>
 					{currentPhoto.description && (
-						<p className="text-gray-300 mb-4">{currentPhoto.description}</p>
+						<p className="text-sm text-gray-600 mt-2 leading-relaxed">
+							{currentPhoto.description}
+						</p>
+					)}
+				</div>
+
+				{/* Metadata Details */}
+				<div className="flex-1 p-6 space-y-4 overflow-y-auto">
+					{currentPhoto.user && (
+						<div>
+							<dt className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+								Photographer
+							</dt>
+							<dd className="text-sm text-gray-900">
+								{currentPhoto.user.name}
+							</dd>
+						</div>
 					)}
 
-					<div className="space-y-2 text-sm">
-						{currentPhoto.user && (
-							<div className="flex items-center">
-								<span className="text-gray-400 w-20">Photographer:</span>
-								<span>{currentPhoto.user.name}</span>
-							</div>
-						)}
-
-						{currentPhoto.category && (
-							<div className="flex items-center">
-								<span className="text-gray-400 w-20">Category:</span>
-								<span>{currentPhoto.category.name}</span>
-							</div>
-						)}
-
-						{currentPhoto.location && (
-							<div className="flex items-center">
-								<span className="text-gray-400 w-20">Location:</span>
-								<span>{currentPhoto.location}</span>
-							</div>
-						)}
-
-						{currentPhoto.dateTaken && (
-							<div className="flex items-center">
-								<span className="text-gray-400 w-20">Captured:</span>
-								<span>
-									{new Date(currentPhoto.dateTaken).toLocaleDateString()}
-								</span>
-							</div>
-						)}
-
-						<div className="flex items-center">
-							<span className="text-gray-400 w-20">Submitted:</span>
-							<span>
-								{new Date(currentPhoto.createdAt).toLocaleDateString()}
-							</span>
+					{currentPhoto.category && (
+						<div>
+							<dt className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+								Category
+							</dt>
+							<dd className="text-sm text-gray-900">
+								{currentPhoto.category.name}
+							</dd>
 						</div>
+					)}
+
+					{currentPhoto.location && (
+						<div>
+							<dt className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+								Location
+							</dt>
+							<dd className="text-sm text-gray-900">{currentPhoto.location}</dd>
+						</div>
+					)}
+
+					{currentPhoto.dateTaken && (
+						<div>
+							<dt className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+								Date Captured
+							</dt>
+							<dd className="text-sm text-gray-900">
+								{new Date(currentPhoto.dateTaken).toLocaleDateString("en-US", {
+									year: "numeric",
+									month: "long",
+									day: "numeric",
+								})}
+							</dd>
+						</div>
+					)}
+
+					<div>
+						<dt className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+							Date Submitted
+						</dt>
+						<dd className="text-sm text-gray-900">
+							{new Date(currentPhoto.createdAt).toLocaleDateString("en-US", {
+								year: "numeric",
+								month: "long",
+								day: "numeric",
+							})}
+						</dd>
 					</div>
 
-					<div className="mt-4 pt-4 border-t border-gray-600 text-xs text-gray-400">
-						<p>Use arrow keys to navigate • I to toggle info • ESC to close</p>
-						<p>+/- to zoom • 0 to reset zoom</p>
+					{currentPhoto.competition && (
+						<div>
+							<dt className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+								Competition
+							</dt>
+							<dd className="text-sm text-gray-900">
+								{currentPhoto.competition.title}
+							</dd>
+						</div>
+					)}
+				</div>
+
+				{/* Footer with keyboard shortcuts */}
+				<div className="p-4 border-t border-gray-200 bg-gray-50">
+					<div className="text-xs text-gray-500 space-y-1">
+						<p>← → Navigate • Esc Close</p>
+						<p>+ - Zoom • 0 Reset</p>
 					</div>
 				</div>
-			)}
-
-			{/* Click overlay to close */}
-			<div
-				className="absolute inset-0 -z-10"
-				onClick={onClose}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						onClose();
-					}
-				}}
-				tabIndex={0}
-				role="button"
-				aria-label="Close lightbox"
-			/>
+			</div>
 		</div>
 	);
 }
