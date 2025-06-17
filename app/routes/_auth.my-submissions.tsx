@@ -136,6 +136,18 @@ export default function MySubmissions() {
 				{/* Statistics */}
 				{stats && <SubmissionStats {...stats} />}
 
+				{/* Call to Action */}
+				<div className="text-center py-12 bg-white border border-gray-200 rounded-lg mb-8">
+					<div className="max-w-md mx-auto">
+						<a
+							href="/submit"
+							className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+						>
+							Submit Your Photo
+						</a>
+					</div>
+				</div>
+
 				{/* Search and Filters */}
 				<div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
 					<div className="flex items-center justify-between mb-4">
@@ -204,14 +216,6 @@ export default function MySubmissions() {
 										? "Try adjusting your filters to see more results."
 										: "You haven't submitted any photos yet. Start by entering a competition!"}
 								</p>
-								{Object.keys(filters).length === 0 && (
-									<a
-										href="/submit"
-										className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-									>
-										Submit Your First Photo
-									</a>
-								)}
 							</div>
 						</div>
 					)}

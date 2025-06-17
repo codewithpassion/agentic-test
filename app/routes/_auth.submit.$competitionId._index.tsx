@@ -93,9 +93,6 @@ export default function SubmitCompetition() {
 		});
 	}, [files]);
 
-	// tRPC mutations
-	const submitBatchMutation = trpc.photos.submitBatch.useMutation();
-
 	// Handle file selection
 	const handleFilesSelected = useCallback(
 		async (newFiles: File[]) => {
@@ -142,7 +139,7 @@ export default function SubmitCompetition() {
 		[photoSubmissions, removeFile],
 	);
 
-	// Handle batch submission
+	// Handle batch submission (simplified - just upload, no additional batch submission)
 	const handleSubmitBatch = useCallback(async () => {
 		if (!competitionId || !competitionData || !user?.id) return;
 
@@ -158,9 +155,14 @@ export default function SubmitCompetition() {
 
 		setIsSubmitting(true);
 		try {
-			// First, upload all photos that haven't been uploaded yet
+			// Track upload results as they complete
+			const uploadResults = new Map<
+				string,
+				{ success: boolean; error?: string }
+			>();
 			const uploadPromises: Promise<void>[] = [];
 
+			// Start uploads for all pending photos with metadata
 			for (const submission of submissionsWithMetadata) {
 				const fileState = files.find((f) => f.id === submission.id);
 
@@ -185,92 +187,57 @@ export default function SubmitCompetition() {
 								? Number.parseInt(submission.metadata.iso)
 								: undefined,
 						},
-					);
+					)
+						.then(() => {
+							uploadResults.set(submission.id, { success: true });
+						})
+						.catch((error) => {
+							uploadResults.set(submission.id, {
+								success: false,
+								error: error instanceof Error ? error.message : "Upload failed",
+							});
+						});
+
 					uploadPromises.push(uploadPromise);
+				} else if (fileState?.status === "completed") {
+					// Already uploaded successfully
+					uploadResults.set(submission.id, { success: true });
 				}
 			}
 
 			// Wait for all uploads to complete
 			if (uploadPromises.length > 0) {
 				await Promise.all(uploadPromises);
-
-				// Wait a bit for the upload states to update
-				await new Promise((resolve) => setTimeout(resolve, 1000));
 			}
 
-			// Now check which submissions have successfully uploaded files
-			const validSubmissions = photoSubmissions.filter((submission) => {
-				const uploadedFile = files.find(
-					(f) =>
-						f.id === submission.id &&
-						f.status === "completed" &&
-						f.uploadedFile,
+			// Check results
+			const totalSubmissions = submissionsWithMetadata.length;
+			const successfulUploads = Array.from(uploadResults.values()).filter(
+				(r) => r.success,
+			).length;
+			const failedUploads = Array.from(uploadResults.values()).filter(
+				(r) => !r.success,
+			);
+
+			if (failedUploads.length > 0) {
+				const errorMessages = failedUploads.map(
+					(result, index) =>
+						`Photo ${index + 1}: ${result.error || "Upload failed"}`,
 				);
-				return submission.metadata && uploadedFile;
-			});
-
-			if (validSubmissions.length === 0) {
-				alert("Photo uploads failed. Please try again.");
-				return;
+				alert(`Some photos failed to upload:\n${errorMessages.join("\n")}`);
 			}
 
-			// Prepare batch submission data for photos that uploaded successfully
-			const batchData = {
-				competitionId,
-				photos: validSubmissions.map((submission) => {
-					const uploadedFile = files.find(
-						(f) =>
-							f.id === submission.id &&
-							f.status === "completed" &&
-							f.uploadedFile,
-					)?.uploadedFile;
-
-					if (!uploadedFile || !submission.metadata) {
-						throw new Error("Invalid submission data");
-					}
-
-					return {
-						categoryId: submission.metadata.categoryId,
-						title: submission.metadata.title,
-						description: submission.metadata.description,
-						dateTaken: new Date(submission.metadata.dateTaken),
-						location: submission.metadata.location,
-						cameraMake: submission.metadata.cameraMake,
-						cameraModel: submission.metadata.cameraModel,
-						lens: submission.metadata.lens,
-						focalLength: submission.metadata.focalLength,
-						aperture: submission.metadata.aperture,
-						shutterSpeed: submission.metadata.shutterSpeed,
-						iso: submission.metadata.iso,
-						filePath: uploadedFile.filePath,
-						fileName: submission.file.name,
-						fileSize: submission.file.size,
-						mimeType: submission.file.type as "image/jpeg" | "image/png",
-						width: 1920, // TODO: Get from image processing
-						height: 1080, // TODO: Get from image processing
-					};
-				}),
-			};
-
-			const result = await submitBatchMutation.mutateAsync(batchData);
-
-			// Show results
-			if (result.errors.length > 0) {
-				const errorMessages = result.errors.map(
-					(err) => `Photo ${err.index + 1}: ${err.error}`,
-				);
-				alert(`Some photos failed to submit:\n${errorMessages.join("\n")}`);
-			}
-
-			if (result.success.length > 0) {
+			if (successfulUploads > 0) {
 				// Clear submissions and redirect to success page
 				setPhotoSubmissions([]);
 				clearFiles();
-				navigate(`/my-submissions?success=${result.success.length}`);
+				navigate(`/my-submissions?success=${successfulUploads}`);
+			} else {
+				alert("No photos were uploaded successfully. Please try again.");
 			}
 		} catch (error) {
-			console.error("Batch submission failed:", error);
-			alert("Submission failed. Please try again.");
+			console.error("Upload failed:", error);
+			alert("Upload failed. Please try again.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -281,7 +248,6 @@ export default function SubmitCompetition() {
 		photoSubmissions,
 		files,
 		startUploadForFile,
-		submitBatchMutation,
 		clearFiles,
 		navigate,
 	]);
@@ -489,8 +455,8 @@ export default function SubmitCompetition() {
 								<Upload className="h-4 w-4" />
 								<span>
 									{isSubmitting
-										? "Uploading & Submitting..."
-										: `Upload & Submit ${readyToSubmit} Photo${readyToSubmit !== 1 ? "s" : ""}`}
+										? "Uploading..."
+										: `Upload ${readyToSubmit} Photo${readyToSubmit !== 1 ? "s" : ""}`}
 								</span>
 							</button>
 						</div>
