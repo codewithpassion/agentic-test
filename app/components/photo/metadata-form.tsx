@@ -149,7 +149,7 @@ export function MetadataForm({
 					id="title"
 					placeholder="Enter a descriptive title for your photo"
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary",
+						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900",
 						errors.title ? "border-red-300" : "border-gray-300",
 					)}
 					maxLength={100}
@@ -183,7 +183,7 @@ export function MetadataForm({
 					rows={4}
 					placeholder="Describe your photo, the story behind it, technique used, etc."
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-vertical",
+						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-vertical text-gray-900",
 						errors.description ? "border-red-300" : "border-gray-300",
 					)}
 					maxLength={500}
@@ -208,7 +208,7 @@ export function MetadataForm({
 						id="dateTaken"
 						max={today}
 						className={cn(
-							"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary",
+							"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900",
 							errors.dateTaken ? "border-red-300" : "border-gray-300",
 						)}
 					/>
@@ -243,7 +243,7 @@ export function MetadataForm({
 					id="location"
 					placeholder="Where was this photo taken?"
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary",
+						"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900",
 						errors.location ? "border-red-300" : "border-gray-300",
 					)}
 					maxLength={100}
@@ -289,7 +289,7 @@ export function MetadataForm({
 									type="text"
 									id="cameraMake"
 									placeholder="e.g., Canon, Nikon"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={50}
 								/>
 							</div>
@@ -307,7 +307,7 @@ export function MetadataForm({
 									type="text"
 									id="cameraModel"
 									placeholder="e.g., EOS R5, D850"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={50}
 								/>
 							</div>
@@ -325,7 +325,7 @@ export function MetadataForm({
 									type="text"
 									id="lens"
 									placeholder="e.g., 24-70mm f/2.8"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={100}
 								/>
 							</div>
@@ -343,7 +343,7 @@ export function MetadataForm({
 									type="text"
 									id="focalLength"
 									placeholder="e.g., 50mm"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={20}
 								/>
 							</div>
@@ -361,7 +361,7 @@ export function MetadataForm({
 									type="text"
 									id="aperture"
 									placeholder="e.g., f/2.8"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={20}
 								/>
 							</div>
@@ -379,7 +379,7 @@ export function MetadataForm({
 									type="text"
 									id="shutterSpeed"
 									placeholder="e.g., 1/125s"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={20}
 								/>
 							</div>
@@ -397,7 +397,7 @@ export function MetadataForm({
 									type="text"
 									id="iso"
 									placeholder="e.g., 400"
-									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+									className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900"
 									maxLength={20}
 								/>
 							</div>
@@ -426,7 +426,7 @@ export function MetadataForm({
 						isSubmitting && "animate-pulse",
 					)}
 				>
-					{isSubmitting ? "Submitting..." : "Continue to Preview"}
+					{isSubmitting ? "Saving..." : "Save Changes"}
 				</button>
 			</div>
 		</form>

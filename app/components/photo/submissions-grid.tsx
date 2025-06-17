@@ -62,12 +62,12 @@ export function SubmissionsGrid({
 
 	// Handle photo actions
 	const handleEdit = (photoId: string) => {
-		navigate(`/my-submissions/${photoId}/edit`);
+		navigate(`/submissions/${photoId}/edit`);
 	};
 
 	const handleView = (photoId: string) => {
 		// For now, redirect to edit page - could be a modal in the future
-		navigate(`/my-submissions/${photoId}/edit`);
+		navigate(`/submissions/${photoId}/edit`);
 	};
 
 	const handleDelete = (photoId: string) => {
