@@ -3,7 +3,7 @@ import { createMiddleware } from "hono/factory";
 
 import type { AppType } from "./types";
 
-import { authAdminSchema } from "@portcityai/better-auth";
+import { authSchema } from "@portcityai/better-auth";
 
 const D1DbMiddleware = createMiddleware<AppType>(async (c, next) => {
 	const db = drizzle(c.env.DB);
@@ -13,16 +13,14 @@ const D1DbMiddleware = createMiddleware<AppType>(async (c, next) => {
 	c.set("Database", {
 		client: db,
 		seed: async () => {
-			const users = await c.var.Database.client
-				.select()
-				.from(authAdminSchema.user);
+			const users = await c.var.Database.client.select().from(authSchema.user);
 			if (users.length > 0) {
 				console.log("Database already seeded");
 				return;
 			}
 			console.log("Seeding database with super admin");
 			await c.var.Database.client
-				.insert(authAdminSchema.user)
+				.insert(authSchema.user)
 				.values({
 					id: "admin",
 					name: "Dominik Fretz",
@@ -30,7 +28,7 @@ const D1DbMiddleware = createMiddleware<AppType>(async (c, next) => {
 					emailVerified: true,
 					createdAt: new Date(),
 					updatedAt: new Date(),
-					role: "admin",
+					roles: "superadmin",
 				})
 				.run();
 		},
