@@ -37,7 +37,65 @@
 			"bucket_name": "photo-gallery-storage",
 			"preview_bucket_name": "photo-gallery-storage-dev"
 		}
-	]
+	],
+	/**
+	 * Environment-specific configurations
+	 */
+	"env": {
+		"staging": {
+			"name": "wda-2025-photo-comp-staging",
+			"vars": {
+				"DEV_MODE": "false"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "app-db-staging",
+					"database_id": "YOUR_STAGING_DB_ID"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "SESSIONS",
+					"id": "YOUR_STAGING_KV_ID"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "PHOTO_STORAGE",
+					"bucket_name": "photo-gallery-storage-staging"
+				}
+			]
+		},
+		"production": {
+			"name": "wda-2025-photo-comp-prod",
+			"vars": {
+				"DEV_MODE": "false",
+				"FROM_EMAIL": "contact@messaging.portcityai.com",
+				"FROM_NAME": "WDA 2025 Photo Comp",
+				"SUPPORT_EMAIL": "wildlifephotocontest@wildlifediseaseassociation.org"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "wda-2025-photo-comp-prod-db",
+					"database_id": "beaacf56-b691-4aa5-be2c-7f8033dc62e2"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "SESSIONS",
+					"id": "d76197df2c6b46f799e3a5b21acdccd8"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "PHOTO_STORAGE",
+					"bucket_name": "wda-2025-photo-comp-prod-storage"
+				}
+			]
+		}
+	}
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
