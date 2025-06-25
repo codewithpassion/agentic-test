@@ -3,11 +3,7 @@ import {
 	type AppLoadContext,
 	Outlet,
 } from "react-router";
-import { LoginLayout } from "../components/login-layout";
-
-import { useContext } from "react";
-import { redirect } from "react-router-dom";
-import { LoginContext } from "~/data/login.context";
+import { PublicLayout } from "~/components/public-layout";
 
 export async function action({
 	request,
@@ -16,12 +12,9 @@ export async function action({
 }: ActionFunctionArgs<AppLoadContext>) {}
 
 export default function Login() {
-	const { email, setEmail, submit, submitting, error } =
-		useContext(LoginContext);
-
 	return (
-		<LoginLayout>
+		<PublicLayout>
 			<Outlet />
-		</LoginLayout>
+		</PublicLayout>
 	);
 }
