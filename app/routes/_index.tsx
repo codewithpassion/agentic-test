@@ -10,6 +10,7 @@ import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
 import { PublicLayout } from "~/components/public-layout";
 import { useAuth } from "~/hooks/use-auth";
+import { useVoteCounts } from "~/hooks/use-votes";
 import { trpc } from "~/lib/trpc";
 import type { PhotoWithRelations } from "../../api/database/schema";
 
@@ -71,6 +72,17 @@ export default function HomePage() {
 	const allPhotos = photosData?.photos || [];
 	const recentPhotos = allPhotos.slice(0, 12); // First 12 for recent submissions
 
+	// Get vote counts for recent photos
+	const photoIds = recentPhotos.map((p) => p.id);
+	const { data: voteData } = useVoteCounts(photoIds);
+
+	// Enhance recent photos with vote data
+	const recentPhotosWithVotes = recentPhotos.map((photo) => ({
+		...photo,
+		voteCount: voteData?.voteCounts[photo.id] || 0,
+		hasVoted: voteData?.userVotes.includes(photo.id) || false,
+	}));
+
 	// Create a map of category ID to first photo
 	const categoryPhotos = categories.reduce(
 		(acc, category) => {
@@ -107,7 +119,7 @@ export default function HomePage() {
 						photos as stories behind them. Click here to start exploring.
 					</p>
 					<Link
-						to={user ? "/submit" : "/login"}
+						to={user ? `/submit/${activeCompetition?.id || ""}` : "/login"}
 						className="inline-flex items-center space-x-2 px-8 py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-lg"
 					>
 						<Camera className="h-5 w-5" />
@@ -236,7 +248,7 @@ export default function HomePage() {
 						) : (
 							<>
 								<PhotoGrid
-									photos={recentPhotos}
+									photos={recentPhotosWithVotes}
 									layout="grid"
 									showMetadata={true}
 									onPhotoClick={handlePhotoClick}
@@ -293,9 +305,9 @@ export default function HomePage() {
 			</div>
 
 			{/* Lightbox */}
-			{recentPhotos.length > 0 && (
+			{recentPhotosWithVotes.length > 0 && (
 				<PhotoLightbox
-					photos={recentPhotos}
+					photos={recentPhotosWithVotes}
 					currentIndex={lightboxIndex}
 					isOpen={lightboxOpen}
 					onClose={() => setLightboxOpen(false)}

@@ -13,6 +13,7 @@ import {
 
 import type { Route } from "./+types/root";
 import "./tailwind.css";
+import { Toaster } from "~/components/ui/sonner";
 import { AuthProvider } from "~/contexts/auth-context";
 import { TRPCProvider } from "~/providers/trpc-provider";
 import { authFactory } from "~~/auth";
@@ -71,6 +72,7 @@ export default function App() {
 		<TRPCProvider>
 			<AuthProvider user={user}>
 				<Outlet />
+				<Toaster />
 			</AuthProvider>
 		</TRPCProvider>
 	);

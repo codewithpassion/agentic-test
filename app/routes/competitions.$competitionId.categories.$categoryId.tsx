@@ -7,7 +7,9 @@ import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
 import { PublicLayout } from "~/components/public-layout";
 import { Button } from "~/components/ui/button";
+import { SubmitPhotoCTA } from "~/components/ui/submit-photo-cta";
 import { useAuth } from "~/hooks/use-auth";
+import { useVoteCounts } from "~/hooks/use-votes";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 import type { PhotoWithRelations } from "../../api/database/schema";
@@ -51,7 +53,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export default function CategoryGallery() {
 	const { competitionId, categoryId } = useLoaderData<LoaderData>();
 	const { user } = useAuth();
-	const [layout, setLayout] = useState<"grid" | "masonry">("grid");
+	const [layout, setLayout] = useState<"grid" | "masonry">("masonry");
 	const [sortBy, setSortBy] = useState<
 		"newest" | "oldest" | "title" | "location"
 	>("newest");
@@ -87,6 +89,17 @@ export default function CategoryGallery() {
 		});
 
 	const photos = photosData?.photos || [];
+
+	// Get vote counts for all photos
+	const photoIds = photos.map((p) => p.id);
+	const { data: voteData } = useVoteCounts(photoIds);
+
+	// Enhance photos with vote data
+	const photosWithVotes = photos.map((photo) => ({
+		...photo,
+		voteCount: voteData?.voteCounts[photo.id] || 0,
+		hasVoted: voteData?.userVotes.includes(photo.id) || false,
+	}));
 
 	const handlePhotoClick = (photo: PhotoWithRelations, index: number) => {
 		setLightboxIndex(index);
@@ -139,40 +152,34 @@ export default function CategoryGallery() {
 
 	return (
 		<PublicLayout>
+			{/* Category Navigation */}
+			{!categoriesLoading && allCategories.length > 1 && (
+				<div className="bg-white border-b">
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+						<div className="flex flex-wrap gap-2">
+							{allCategories.map((cat) => (
+								<Link
+									key={cat.id}
+									to={`/competitions/${competitionId}/categories/${cat.id}`}
+									className={cn(
+										"px-4 py-2 rounded-full border transition-colors text-sm",
+										cat.id === categoryId
+											? "bg-black text-white border-black"
+											: "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50",
+									)}
+								>
+									{cat.name}
+								</Link>
+							))}
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* Header */}
 			<div className="bg-white border-b">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-					<div className="flex items-center gap-4 mb-6">
-						<Link to="/">
-							<Button variant="outline" size="sm">
-								<ArrowLeft className="w-4 h-4 mr-2" />
-								Home
-							</Button>
-						</Link>
-						<Link to={`/competitions/${competitionId}/gallery`}>
-							<Button variant="outline" size="sm">
-								All Categories
-							</Button>
-						</Link>
-					</div>
-
 					<div className="space-y-4">
-						{/* Breadcrumb */}
-						<nav className="text-sm text-gray-500">
-							<Link to="/" className="hover:text-gray-700">
-								Home
-							</Link>
-							{" > "}
-							<Link
-								to={`/competitions/${competitionId}/gallery`}
-								className="hover:text-gray-700"
-							>
-								{competition.title}
-							</Link>
-							{" > "}
-							<span className="text-gray-900 font-medium">{category.name}</span>
-						</nav>
-
 						<div className="flex items-center gap-3">
 							<Camera className="w-8 h-8 text-gray-400" />
 							<div>
@@ -212,30 +219,6 @@ export default function CategoryGallery() {
 				</div>
 			</div>
 
-			{/* Category Navigation */}
-			{!categoriesLoading && allCategories.length > 1 && (
-				<div className="bg-white border-b">
-					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-						<div className="flex flex-wrap gap-2">
-							{allCategories.map((cat) => (
-								<Link
-									key={cat.id}
-									to={`/competitions/${competitionId}/categories/${cat.id}`}
-									className={cn(
-										"px-4 py-2 rounded-full border transition-colors text-sm",
-										cat.id === categoryId
-											? "bg-black text-white border-black"
-											: "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50",
-									)}
-								>
-									{cat.name}
-								</Link>
-							))}
-						</div>
-					</div>
-				</div>
-			)}
-
 			{/* Gallery Content */}
 			<div className="bg-gray-50">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -258,8 +241,8 @@ export default function CategoryGallery() {
 
 					{/* Photo Grid */}
 					<PhotoGrid
-						photos={photos}
-						columns={layout === "grid" ? 3 : 3}
+						photos={photosWithVotes}
+						columns={3}
 						layout={layout}
 						aspectRatio="auto"
 						gap="md"
@@ -285,7 +268,7 @@ export default function CategoryGallery() {
 									<Button variant="outline">View All Categories</Button>
 								</Link>
 								{competition.status === "active" && (
-									<Link to={user ? "/submit" : "/login"}>
+									<Link to={user ? `/submit/${competitionId}` : "/login"}>
 										<Button>Submit Your Photo</Button>
 									</Link>
 								)}
@@ -297,29 +280,19 @@ export default function CategoryGallery() {
 					{!isLoading &&
 						photos.length > 0 &&
 						competition.status === "active" && (
-							<div className="bg-gray-100 rounded-lg p-8 text-center">
-								<h3 className="text-xl font-medium text-gray-900 mb-2">
-									Inspired by what you see?
-								</h3>
-								<p className="text-gray-600 mb-6">
-									Join the competition and submit your own photos to the{" "}
-									{category.name} category.
-								</p>
-								<Link to={user ? "/submit" : "/login"}>
-									<Button size="lg">
-										<Camera className="w-5 h-5 mr-2" />
-										Submit Your Photo
-									</Button>
-								</Link>
-							</div>
+							<SubmitPhotoCTA
+								competitionId={competitionId}
+								categoryName={category.name}
+								title="Inspired by what you see?"
+							/>
 						)}
 				</div>
 			</div>
 
 			{/* Lightbox */}
-			{photos.length > 0 && (
+			{photosWithVotes.length > 0 && (
 				<PhotoLightbox
-					photos={photos}
+					photos={photosWithVotes}
 					currentIndex={lightboxIndex}
 					isOpen={lightboxOpen}
 					onClose={() => setLightboxOpen(false)}

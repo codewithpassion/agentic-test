@@ -8,10 +8,20 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import { useAuth } from "~/hooks/use-auth";
+import { useVoteForPhoto } from "~/hooks/use-votes";
 import type { PhotoWithRelations } from "../../../api/database/schema";
 
+// Extend PhotoWithRelations to include vote data
+type PhotoWithVotes = PhotoWithRelations & {
+	voteCount?: number;
+	hasVoted?: boolean;
+};
+
 interface PhotoLightboxProps {
-	photos: PhotoWithRelations[];
+	photos: PhotoWithVotes[];
 	currentIndex: number;
 	isOpen: boolean;
 	onClose: () => void;
@@ -27,6 +37,32 @@ export function PhotoLightbox({
 }: PhotoLightboxProps) {
 	const [zoom, setZoom] = useState(1);
 	const currentPhoto = photos[currentIndex];
+	const navigate = useNavigate();
+	const { user } = useAuth();
+
+	// Voting functionality
+	const {
+		vote,
+		unvote,
+		isLoading: voteLoading,
+	} = useVoteForPhoto(currentPhoto?.id || "", currentPhoto?.categoryId);
+
+	const handleVote = () => {
+		if (!currentPhoto) return;
+
+		// Check if user is authenticated
+		if (!user) {
+			toast.info("Please login to vote");
+			navigate("/login");
+			return;
+		}
+
+		if (currentPhoto.hasVoted) {
+			unvote();
+		} else {
+			vote();
+		}
+	};
 
 	useEffect(() => {
 		console.log("Current photo:", currentPhoto);
@@ -197,6 +233,55 @@ export function PhotoLightbox({
 							}}
 							draggable={false}
 						/>
+
+						{/* Vote Button - Bottom Center */}
+						{currentPhoto.status === "approved" && (
+							<div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+								<button
+									type="button"
+									onClick={handleVote}
+									disabled={voteLoading}
+									className={`
+										flex items-center gap-3 px-6 py-3 rounded-full
+										bg-white/95 backdrop-blur-sm shadow-lg
+										transition-all duration-200 transform
+										${
+											currentPhoto.hasVoted
+												? "text-red-600 hover:bg-red-50 hover:scale-105"
+												: "text-gray-700 hover:bg-gray-50 hover:scale-105"
+										}
+										${voteLoading ? "opacity-50 cursor-not-allowed" : ""}
+									`}
+								>
+									<svg
+										className={`w-6 h-6 transition-all duration-200 ${
+											currentPhoto.hasVoted ? "fill-current" : ""
+										} ${voteLoading ? "animate-pulse" : ""}`}
+										fill={currentPhoto.hasVoted ? "currentColor" : "none"}
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<title>
+											{currentPhoto.hasVoted
+												? "Remove vote"
+												: "Vote for this photo"}
+										</title>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+										/>
+									</svg>
+									<span className="font-medium text-lg">
+										{currentPhoto.hasVoted ? "Voted" : "Vote"}
+									</span>
+									<span className="font-bold text-lg tabular-nums">
+										{currentPhoto.voteCount || 0}
+									</span>
+								</button>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>

@@ -30,6 +30,13 @@ export default function MySubmissions() {
 	const [viewMode, setViewMode] = useState<ViewMode>("grid");
 	const [showFilters, setShowFilters] = useState(false);
 
+	// Fetch active competitions
+	const { data: competitions = [] } = trpc.competitions.list.useQuery({
+		status: "active",
+		limit: 1,
+	});
+	const activeCompetition = competitions[0];
+
 	// Fetch user submissions with filters
 	const {
 		data: submissions,
@@ -116,7 +123,11 @@ export default function MySubmissions() {
 					<div className="text-center py-12 bg-white border border-gray-200 rounded-lg mb-8">
 						<div className="max-w-md mx-auto">
 							<a
-								href="/submit"
+								href={
+									activeCompetition
+										? `/submit/${activeCompetition.id}`
+										: "/submit"
+								}
 								className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
 							>
 								Submit Your Photo

@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Camera } from "lucide-react";
 import { useState } from "react";
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useLoaderData } from "react-router";
@@ -7,6 +7,9 @@ import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
 import { PublicLayout } from "~/components/public-layout";
 import { Button } from "~/components/ui/button";
+import { SubmitPhotoCTA } from "~/components/ui/submit-photo-cta";
+import { useAuth } from "~/hooks/use-auth";
+import { useVoteCounts } from "~/hooks/use-votes";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 import type { PhotoWithRelations } from "../../api/database/schema";
@@ -48,8 +51,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export default function CompetitionGallery() {
 	const { competitionId } = useLoaderData<LoaderData>();
+	const { user } = useAuth();
 	const [selectedCategory, setSelectedCategory] = useState<string>();
-	const [layout, setLayout] = useState<"grid" | "masonry">("grid");
+	const [layout, setLayout] = useState<"grid" | "masonry">("masonry");
 	const [sortBy, setSortBy] = useState<
 		"newest" | "oldest" | "title" | "location"
 	>("newest");
@@ -80,6 +84,17 @@ export default function CompetitionGallery() {
 		});
 
 	const photos = photosData?.photos || [];
+
+	// Get vote counts for all photos
+	const photoIds = photos.map((p) => p.id);
+	const { data: voteData } = useVoteCounts(photoIds);
+
+	// Enhance photos with vote data
+	const photosWithVotes = photos.map((photo) => ({
+		...photo,
+		voteCount: voteData?.voteCounts[photo.id] || 0,
+		hasVoted: voteData?.userVotes.includes(photo.id) || false,
+	}));
 
 	const handlePhotoClick = (photo: PhotoWithRelations, index: number) => {
 		setLightboxIndex(index);
@@ -136,14 +151,26 @@ export default function CompetitionGallery() {
 			<div className="bg-white border-b">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 					<div className="space-y-4">
-						<h1 className="text-3xl font-bold text-gray-900">
-							{competition.title}
-						</h1>
-						{competition.description && (
-							<p className="text-lg text-gray-600 max-w-3xl">
-								{competition.description}
-							</p>
-						)}
+						<div className="flex items-start justify-between gap-4">
+							<div>
+								<h1 className="text-3xl font-bold text-gray-900">
+									{competition.title}
+								</h1>
+								{competition.description && (
+									<p className="text-lg text-gray-600 max-w-3xl mt-2">
+										{competition.description}
+									</p>
+								)}
+							</div>
+							{competition.status === "active" && (
+								<Link to={user ? `/submit/${competitionId}` : "/login"}>
+									<Button size="lg">
+										<Camera className="w-5 h-5 mr-2" />
+										Submit Your Photo
+									</Button>
+								</Link>
+							)}
+						</div>
 
 						{/* Competition Stats */}
 						<div className="flex flex-wrap gap-6 text-sm text-gray-500">
@@ -198,8 +225,8 @@ export default function CompetitionGallery() {
 
 					{/* Photo Grid */}
 					<PhotoGrid
-						photos={photos}
-						columns={layout === "grid" ? 3 : 3}
+						photos={photosWithVotes}
+						columns={3}
 						layout={layout}
 						aspectRatio="auto"
 						gap="md"
@@ -223,23 +250,40 @@ export default function CompetitionGallery() {
 									? "Try selecting a different category or check back later."
 									: "Photos will appear here once they're submitted and approved."}
 							</p>
-							{selectedCategory && (
-								<Button
-									variant="outline"
-									onClick={() => setSelectedCategory(undefined)}
-								>
-									View All Categories
-								</Button>
-							)}
+							<div className="flex flex-col sm:flex-row gap-4 justify-center">
+								{selectedCategory && (
+									<Button
+										variant="outline"
+										onClick={() => setSelectedCategory(undefined)}
+									>
+										View All Categories
+									</Button>
+								)}
+								{competition.status === "active" && (
+									<Link to={user ? `/submit/${competitionId}` : "/login"}>
+										<Button>
+											<Camera className="w-5 h-5 mr-2" />
+											Submit Your Photo
+										</Button>
+									</Link>
+								)}
+							</div>
 						</div>
 					)}
+
+					{/* Call to Action */}
+					{!isLoading &&
+						photos.length > 0 &&
+						competition.status === "active" && (
+							<SubmitPhotoCTA competitionId={competitionId} />
+						)}
 				</div>
 			</div>
 
 			{/* Lightbox */}
-			{photos.length > 0 && (
+			{photosWithVotes.length > 0 && (
 				<PhotoLightbox
-					photos={photos}
+					photos={photosWithVotes}
 					currentIndex={lightboxIndex}
 					isOpen={lightboxOpen}
 					onClose={() => setLightboxOpen(false)}
