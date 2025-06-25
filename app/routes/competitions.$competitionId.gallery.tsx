@@ -5,6 +5,7 @@ import { Link, useLoaderData } from "react-router";
 import { GalleryFilters } from "~/components/gallery/gallery-filters";
 import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
+import { PublicLayout } from "~/components/public-layout";
 import { Button } from "~/components/ui/button";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
@@ -93,52 +94,47 @@ export default function CompetitionGallery() {
 
 	if (competitionLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50 p-8">
-				<div className="max-w-7xl mx-auto">
-					<div className="animate-pulse">
-						<div className="h-8 bg-gray-200 rounded w-1/3 mb-4" />
-						<div className="h-12 bg-gray-200 rounded w-2/3 mb-8" />
+			<PublicLayout>
+				<div className="p-8">
+					<div className="max-w-7xl mx-auto">
+						<div className="animate-pulse">
+							<div className="h-8 bg-gray-200 rounded w-1/3 mb-4" />
+							<div className="h-12 bg-gray-200 rounded w-2/3 mb-8" />
+						</div>
 					</div>
 				</div>
-			</div>
+			</PublicLayout>
 		);
 	}
 
 	if (!competition) {
 		return (
-			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold text-gray-900 mb-2">
-						Competition Not Found
-					</h1>
-					<p className="text-gray-600 mb-4">
-						The competition you're looking for doesn't exist or isn't public.
-					</p>
-					<Link to="/">
-						<Button>
-							<ArrowLeft className="w-4 h-4 mr-2" />
-							Go Home
-						</Button>
-					</Link>
+			<PublicLayout>
+				<div className="flex items-center justify-center min-h-[60vh]">
+					<div className="text-center">
+						<h1 className="text-2xl font-bold text-gray-900 mb-2">
+							Competition Not Found
+						</h1>
+						<p className="text-gray-600 mb-4">
+							The competition you're looking for doesn't exist or isn't public.
+						</p>
+						<Link to="/">
+							<Button>
+								<ArrowLeft className="w-4 h-4 mr-2" />
+								Go Home
+							</Button>
+						</Link>
+					</div>
 				</div>
-			</div>
+			</PublicLayout>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<PublicLayout>
 			{/* Header */}
 			<div className="bg-white border-b">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-					<div className="flex items-center gap-4 mb-6">
-						<Link to="/">
-							<Button variant="outline" size="sm">
-								<ArrowLeft className="w-4 h-4 mr-2" />
-								Back to Home
-							</Button>
-						</Link>
-					</div>
-
 					<div className="space-y-4">
 						<h1 className="text-3xl font-bold text-gray-900">
 							{competition.title}
@@ -182,60 +178,62 @@ export default function CompetitionGallery() {
 			</div>
 
 			{/* Gallery Content */}
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				{/* Filters */}
-				<div className="mb-8">
-					<GalleryFilters
-						categories={categories}
-						selectedCategory={selectedCategory}
-						onCategoryChange={setSelectedCategory}
-						layout={layout}
-						onLayoutChange={setLayout}
-						sortBy={sortBy}
-						onSortChange={setSortBy}
-						showMetadata={showMetadata}
-						onMetadataToggle={setShowMetadata}
-						photoCount={photos.length}
-					/>
-				</div>
-
-				{/* Photo Grid */}
-				<PhotoGrid
-					photos={photos}
-					columns={layout === "grid" ? 3 : 3}
-					layout={layout}
-					aspectRatio="auto"
-					gap="md"
-					showMetadata={showMetadata}
-					onPhotoClick={handlePhotoClick}
-					loading={isLoading}
-					className="mb-12"
-				/>
-
-				{/* Empty State */}
-				{!isLoading && photos.length === 0 && (
-					<div className="text-center py-16">
-						<div className="text-6xl mb-4">📷</div>
-						<h3 className="text-xl font-medium text-gray-900 mb-2">
-							{selectedCategory
-								? "No photos in this category"
-								: "No photos yet"}
-						</h3>
-						<p className="text-gray-500 mb-6">
-							{selectedCategory
-								? "Try selecting a different category or check back later."
-								: "Photos will appear here once they're submitted and approved."}
-						</p>
-						{selectedCategory && (
-							<Button
-								variant="outline"
-								onClick={() => setSelectedCategory(undefined)}
-							>
-								View All Categories
-							</Button>
-						)}
+			<div className="bg-gray-50">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+					{/* Filters */}
+					<div className="mb-8">
+						<GalleryFilters
+							categories={categories}
+							selectedCategory={selectedCategory}
+							onCategoryChange={setSelectedCategory}
+							layout={layout}
+							onLayoutChange={setLayout}
+							sortBy={sortBy}
+							onSortChange={setSortBy}
+							showMetadata={showMetadata}
+							onMetadataToggle={setShowMetadata}
+							photoCount={photos.length}
+						/>
 					</div>
-				)}
+
+					{/* Photo Grid */}
+					<PhotoGrid
+						photos={photos}
+						columns={layout === "grid" ? 3 : 3}
+						layout={layout}
+						aspectRatio="auto"
+						gap="md"
+						showMetadata={showMetadata}
+						onPhotoClick={handlePhotoClick}
+						loading={isLoading}
+						className="mb-12"
+					/>
+
+					{/* Empty State */}
+					{!isLoading && photos.length === 0 && (
+						<div className="text-center py-16">
+							<div className="text-6xl mb-4">📷</div>
+							<h3 className="text-xl font-medium text-gray-900 mb-2">
+								{selectedCategory
+									? "No photos in this category"
+									: "No photos yet"}
+							</h3>
+							<p className="text-gray-500 mb-6">
+								{selectedCategory
+									? "Try selecting a different category or check back later."
+									: "Photos will appear here once they're submitted and approved."}
+							</p>
+							{selectedCategory && (
+								<Button
+									variant="outline"
+									onClick={() => setSelectedCategory(undefined)}
+								>
+									View All Categories
+								</Button>
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* Lightbox */}
@@ -248,6 +246,6 @@ export default function CompetitionGallery() {
 					onNavigate={handleLightboxNavigate}
 				/>
 			)}
-		</div>
+		</PublicLayout>
 	);
 }

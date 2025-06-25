@@ -1,3 +1,4 @@
+import { PublicLayout } from "~/components/public-layout";
 import { Welcome } from "../welcome/welcome";
 import type { Route } from "./+types/home";
 
@@ -13,5 +14,9 @@ export function loader({ context }: Route.LoaderArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-	return <Welcome message={loaderData.message} />;
+	return (
+		<PublicLayout>
+			<Welcome message={loaderData.message} />
+		</PublicLayout>
+	);
 }

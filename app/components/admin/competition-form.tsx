@@ -21,7 +21,7 @@ const competitionFormSchema = z
 			.max(100, "Title must be less than 100 characters"),
 		description: z
 			.string()
-			.min(10, "Description must be at least 10 characters")
+			.min(20, "Description must be at least 10 characters")
 			.max(2000, "Description must be less than 2000 characters"),
 		startDate: z.string().optional(),
 		endDate: z.string().optional(),

@@ -8,6 +8,8 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link } from "react-router";
 import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
+import { PublicLayout } from "~/components/public-layout";
+import { useAuth } from "~/hooks/use-auth";
 import { trpc } from "~/lib/trpc";
 import type { PhotoWithRelations } from "../../api/database/schema";
 
@@ -37,6 +39,7 @@ export async function loader(args: LoaderFunctionArgs) {
 export default function HomePage() {
 	const [lightboxOpen, setLightboxOpen] = useState(false);
 	const [lightboxIndex, setLightboxIndex] = useState(0);
+	const { user } = useAuth();
 
 	// Fetch active competitions
 	const { data: competitions = [], isLoading: competitionsLoading } =
@@ -87,54 +90,7 @@ export default function HomePage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-white">
-			{/* Navigation */}
-			<nav className="bg-white border-b border-gray-200">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex justify-between items-center h-16">
-						<div className="flex items-center space-x-8">
-							<div className="text-xl font-bold text-gray-900">
-								2025 Wildlife Photo Contest
-							</div>
-							<div className="hidden md:flex space-x-6 text-sm">
-								<Link to="/" className="text-gray-900 hover:text-gray-600">
-									Home
-								</Link>
-								<Link to="/about" className="text-gray-900 hover:text-gray-600">
-									About
-								</Link>
-								{categories.map((category) => (
-									<Link
-										key={category.id}
-										to={
-											activeCompetition
-												? `/competitions/${activeCompetition.id}/categories/${category.id}`
-												: "#"
-										}
-										className="text-gray-900 hover:text-gray-600"
-									>
-										{category.name}
-									</Link>
-								))}
-								<Link
-									to="/contact"
-									className="text-gray-900 hover:text-gray-600"
-								>
-									Contact
-								</Link>
-							</div>
-						</div>
-						<div className="flex items-center space-x-4">
-							<div className="hidden sm:flex items-center space-x-2 text-gray-600">
-								<span>📧</span>
-								<span>🐦</span>
-								<span>📷</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</nav>
-
+		<PublicLayout>
 			{/* Hero Section */}
 			<div className="relative bg-white py-16">
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -143,13 +99,20 @@ export default function HomePage() {
 						<br />
 						<span className="text-gray-700">Categories</span>
 					</h1>
-					<p className="text-lg text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
+					<p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
 						Welcome to the Wildlife Photo Contest, an event as part of the 73rd
 						annual international conference of the Wildlife Disease Association.
 						This is a platform to showcase the wildlife captures participating
 						in the contest for recognition and prizes. Join us and explore the
 						photos as stories behind them. Click here to start exploring.
 					</p>
+					<Link
+						to={user ? "/submit" : "/login"}
+						className="inline-flex items-center space-x-2 px-8 py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-lg"
+					>
+						<Camera className="h-5 w-5" />
+						<span>Submit Your Photo</span>
+					</Link>
 				</div>
 			</div>
 
@@ -329,15 +292,6 @@ export default function HomePage() {
 				</div>
 			</div>
 
-			{/* Footer */}
-			<footer className="bg-white border-t border-gray-200 py-8">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center text-sm text-gray-500">
-						© 2025 WDA Wildlife Photo Contest. All rights reserved.
-					</div>
-				</div>
-			</footer>
-
 			{/* Lightbox */}
 			{recentPhotos.length > 0 && (
 				<PhotoLightbox
@@ -348,6 +302,6 @@ export default function HomePage() {
 					onNavigate={setLightboxIndex}
 				/>
 			)}
-		</div>
+		</PublicLayout>
 	);
 }

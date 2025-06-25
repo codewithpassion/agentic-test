@@ -5,7 +5,9 @@ import { Link, useLoaderData } from "react-router";
 import { GalleryFilters } from "~/components/gallery/gallery-filters";
 import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
+import { PublicLayout } from "~/components/public-layout";
 import { Button } from "~/components/ui/button";
+import { useAuth } from "~/hooks/use-auth";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 import type { PhotoWithRelations } from "../../api/database/schema";
@@ -48,6 +50,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export default function CategoryGallery() {
 	const { competitionId, categoryId } = useLoaderData<LoaderData>();
+	const { user } = useAuth();
 	const [layout, setLayout] = useState<"grid" | "masonry">("grid");
 	const [sortBy, setSortBy] = useState<
 		"newest" | "oldest" | "title" | "location"
@@ -98,40 +101,44 @@ export default function CategoryGallery() {
 
 	if (competitionLoading || categoryLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50 p-8">
-				<div className="max-w-7xl mx-auto">
-					<div className="animate-pulse">
-						<div className="h-8 bg-gray-200 rounded w-1/3 mb-4" />
-						<div className="h-12 bg-gray-200 rounded w-2/3 mb-8" />
+			<PublicLayout>
+				<div className="p-8">
+					<div className="max-w-7xl mx-auto">
+						<div className="animate-pulse">
+							<div className="h-8 bg-gray-200 rounded w-1/3 mb-4" />
+							<div className="h-12 bg-gray-200 rounded w-2/3 mb-8" />
+						</div>
 					</div>
 				</div>
-			</div>
+			</PublicLayout>
 		);
 	}
 
 	if (!competition || !category) {
 		return (
-			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold text-gray-900 mb-2">
-						Category Not Found
-					</h1>
-					<p className="text-gray-600 mb-4">
-						The category you're looking for doesn't exist or isn't public.
-					</p>
-					<Link to="/">
-						<Button>
-							<ArrowLeft className="w-4 h-4 mr-2" />
-							Go Home
-						</Button>
-					</Link>
+			<PublicLayout>
+				<div className="flex items-center justify-center min-h-[60vh]">
+					<div className="text-center">
+						<h1 className="text-2xl font-bold text-gray-900 mb-2">
+							Category Not Found
+						</h1>
+						<p className="text-gray-600 mb-4">
+							The category you're looking for doesn't exist or isn't public.
+						</p>
+						<Link to="/">
+							<Button>
+								<ArrowLeft className="w-4 h-4 mr-2" />
+								Go Home
+							</Button>
+						</Link>
+					</div>
 				</div>
-			</div>
+			</PublicLayout>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<PublicLayout>
 			{/* Header */}
 			<div className="bg-white border-b">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -230,79 +237,83 @@ export default function CategoryGallery() {
 			)}
 
 			{/* Gallery Content */}
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				{/* Filters */}
-				<div className="mb-8">
-					<GalleryFilters
-						categories={[]} // Hide category filters since we're already in a specific category
-						selectedCategory={categoryId}
-						onCategoryChange={() => {}} // No-op since category is fixed
+			<div className="bg-gray-50">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+					{/* Filters */}
+					<div className="mb-8">
+						<GalleryFilters
+							categories={[]} // Hide category filters since we're already in a specific category
+							selectedCategory={categoryId}
+							onCategoryChange={() => {}} // No-op since category is fixed
+							layout={layout}
+							onLayoutChange={setLayout}
+							sortBy={sortBy}
+							onSortChange={setSortBy}
+							showMetadata={showMetadata}
+							onMetadataToggle={setShowMetadata}
+							photoCount={photos.length}
+							compact={true} // Use compact version
+						/>
+					</div>
+
+					{/* Photo Grid */}
+					<PhotoGrid
+						photos={photos}
+						columns={layout === "grid" ? 3 : 3}
 						layout={layout}
-						onLayoutChange={setLayout}
-						sortBy={sortBy}
-						onSortChange={setSortBy}
+						aspectRatio="auto"
+						gap="md"
 						showMetadata={showMetadata}
-						onMetadataToggle={setShowMetadata}
-						photoCount={photos.length}
-						compact={true} // Use compact version
+						onPhotoClick={handlePhotoClick}
+						loading={isLoading}
+						className="mb-12"
 					/>
-				</div>
 
-				{/* Photo Grid */}
-				<PhotoGrid
-					photos={photos}
-					columns={layout === "grid" ? 3 : 3}
-					layout={layout}
-					aspectRatio="auto"
-					gap="md"
-					showMetadata={showMetadata}
-					onPhotoClick={handlePhotoClick}
-					loading={isLoading}
-					className="mb-12"
-				/>
-
-				{/* Empty State */}
-				{!isLoading && photos.length === 0 && (
-					<div className="text-center py-16">
-						<div className="text-6xl mb-4">📷</div>
-						<h3 className="text-xl font-medium text-gray-900 mb-2">
-							No photos in {category.name} yet
-						</h3>
-						<p className="text-gray-500 mb-6">
-							Photos will appear here once they're submitted and approved for
-							this category.
-						</p>
-						<div className="flex flex-col sm:flex-row gap-4 justify-center">
-							<Link to={`/competitions/${competitionId}/gallery`}>
-								<Button variant="outline">View All Categories</Button>
-							</Link>
-							{competition.status === "active" && (
-								<Link to="/login">
-									<Button>Submit Your Photo</Button>
+					{/* Empty State */}
+					{!isLoading && photos.length === 0 && (
+						<div className="text-center py-16">
+							<div className="text-6xl mb-4">📷</div>
+							<h3 className="text-xl font-medium text-gray-900 mb-2">
+								No photos in {category.name} yet
+							</h3>
+							<p className="text-gray-500 mb-6">
+								Photos will appear here once they're submitted and approved for
+								this category.
+							</p>
+							<div className="flex flex-col sm:flex-row gap-4 justify-center">
+								<Link to={`/competitions/${competitionId}/gallery`}>
+									<Button variant="outline">View All Categories</Button>
 								</Link>
-							)}
+								{competition.status === "active" && (
+									<Link to={user ? "/submit" : "/login"}>
+										<Button>Submit Your Photo</Button>
+									</Link>
+								)}
+							</div>
 						</div>
-					</div>
-				)}
+					)}
 
-				{/* Call to Action */}
-				{!isLoading && photos.length > 0 && competition.status === "active" && (
-					<div className="bg-gray-100 rounded-lg p-8 text-center">
-						<h3 className="text-xl font-medium text-gray-900 mb-2">
-							Inspired by what you see?
-						</h3>
-						<p className="text-gray-600 mb-6">
-							Join the competition and submit your own photos to the{" "}
-							{category.name} category.
-						</p>
-						<Link to="/login">
-							<Button size="lg">
-								<Camera className="w-5 h-5 mr-2" />
-								Submit Your Photo
-							</Button>
-						</Link>
-					</div>
-				)}
+					{/* Call to Action */}
+					{!isLoading &&
+						photos.length > 0 &&
+						competition.status === "active" && (
+							<div className="bg-gray-100 rounded-lg p-8 text-center">
+								<h3 className="text-xl font-medium text-gray-900 mb-2">
+									Inspired by what you see?
+								</h3>
+								<p className="text-gray-600 mb-6">
+									Join the competition and submit your own photos to the{" "}
+									{category.name} category.
+								</p>
+								<Link to={user ? "/submit" : "/login"}>
+									<Button size="lg">
+										<Camera className="w-5 h-5 mr-2" />
+										Submit Your Photo
+									</Button>
+								</Link>
+							</div>
+						)}
+				</div>
 			</div>
 
 			{/* Lightbox */}
@@ -315,6 +326,6 @@ export default function CategoryGallery() {
 					onNavigate={handleLightboxNavigate}
 				/>
 			)}
-		</div>
+		</PublicLayout>
 	);
 }

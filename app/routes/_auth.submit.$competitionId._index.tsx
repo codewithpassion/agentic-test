@@ -2,9 +2,11 @@
  * Multi-photo submission page for a specific competition
  */
 
-import { ArrowLeft, Plus, Upload } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { Footer } from "~/components/footer";
+import { NavigationHeader } from "~/components/navigation-header";
 import type { CategoryWithSubmissionInfo } from "~/components/photo/category-select";
 import {
 	PhotoMetadataCard,
@@ -272,39 +274,55 @@ export default function SubmitCompetition() {
 
 	if (!competitionId) {
 		return (
-			<div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-				<div className="text-center">
-					<p className="text-red-600">Competition ID is required</p>
+			<div className="min-h-screen bg-gray-50 flex flex-col">
+				<NavigationHeader />
+				<div className="flex-grow flex items-center justify-center">
+					<div className="text-center">
+						<p className="text-red-600">Competition ID is required</p>
+					</div>
 				</div>
+				<Footer />
 			</div>
 		);
 	}
 
 	if (isLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-				<LoadingSpinner className="h-8 w-8" />
+			<div className="min-h-screen bg-gray-50 flex flex-col">
+				<NavigationHeader />
+				<div className="flex-grow flex items-center justify-center">
+					<LoadingSpinner className="h-8 w-8" />
+				</div>
+				<Footer />
 			</div>
 		);
 	}
 
 	if (error) {
 		return (
-			<div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-				<div className="text-center">
-					<p className="text-red-600 mb-4">Failed to load competition data</p>
-					<p className="text-gray-600">{error.message}</p>
+			<div className="min-h-screen bg-gray-50 flex flex-col">
+				<NavigationHeader />
+				<div className="flex-grow flex items-center justify-center">
+					<div className="text-center">
+						<p className="text-red-600 mb-4">Failed to load competition data</p>
+						<p className="text-gray-600">{error.message}</p>
+					</div>
 				</div>
+				<Footer />
 			</div>
 		);
 	}
 
 	if (!competitionData) {
 		return (
-			<div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-				<div className="text-center">
-					<p className="text-gray-600">Competition not found</p>
+			<div className="min-h-screen bg-gray-50 flex flex-col">
+				<NavigationHeader />
+				<div className="flex-grow flex items-center justify-center">
+					<div className="text-center">
+						<p className="text-gray-600">Competition not found</p>
+					</div>
 				</div>
+				<Footer />
 			</div>
 		);
 	}
@@ -321,161 +339,156 @@ export default function SubmitCompetition() {
 		}));
 
 	return (
-		<div className="min-h-screen bg-gray-50 py-8">
-			<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Header */}
-				<div className="mb-8">
-					<button
-						type="button"
-						onClick={() => navigate("/submit")}
-						className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
-					>
-						<ArrowLeft className="h-4 w-4" />
-						<span>Back to Competitions</span>
-					</button>
+		<div className="min-h-screen bg-gray-50 flex flex-col">
+			<NavigationHeader />
+			<div className="flex-grow py-8">
+				<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+					{/* Header */}
+					<div className="mb-8">
+						<div className="bg-white border border-gray-200 rounded-lg p-6">
+							<h1 className="text-2xl font-bold text-gray-900 mb-2">
+								Submit Photos to {competition.title}
+							</h1>
+							<p className="text-gray-600 mb-4">{competition.description}</p>
 
-					<div className="bg-white border border-gray-200 rounded-lg p-6">
-						<h1 className="text-2xl font-bold text-gray-900 mb-2">
-							Submit Photos to {competition.title}
-						</h1>
-						<p className="text-gray-600 mb-4">{competition.description}</p>
-
-						{/* Submission stats */}
-						{photoSubmissions.length > 0 && (
-							<div className="flex items-center space-x-6 text-sm text-gray-600">
-								<span>{photoSubmissions.length} photos selected</span>
-								<span>{completedUploads} uploaded</span>
-								<span>{completedMetadata} with metadata</span>
-								<span className="font-medium text-primary">
-									{readyToSubmit} ready to submit
-								</span>
-							</div>
-						)}
-					</div>
-				</div>
-
-				{/* Upload Zone */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-xl font-semibold text-gray-900">
-							Upload Photos
-						</h2>
-						<span className="text-sm text-gray-500">
-							{categories.length} categor{categories.length !== 1 ? "ies" : "y"}{" "}
-							available
-						</span>
-					</div>
-
-					<UploadZone
-						onFilesSelected={handleFilesSelected}
-						maxFiles={10 - photoSubmissions.length}
-						multiple={true}
-						acceptedTypes={["image/jpeg", "image/png"]}
-						maxFileSize={10 * 1024 * 1024} // 10MB
-						disabled={photoSubmissions.length >= 10}
-					/>
-
-					{photoSubmissions.length >= 10 && (
-						<p className="text-sm text-amber-600 mt-2">
-							Maximum of 10 photos per submission. Remove some photos to add
-							more.
-						</p>
-					)}
-				</div>
-
-				{/* Upload Progress Display */}
-				{files.length > 0 && (
-					<DetailedUploadProgress
-						uploads={files.map((file) => ({
-							id: file.id,
-							fileName: file.file.name,
-							fileSize: file.file.size,
-							progress: file.progress,
-							status: file.status === "validating" ? "pending" : file.status,
-							error: file.error,
-							speed: file.speed,
-						}))}
-						className="mb-6"
-					/>
-				)}
-
-				{/* Photo Metadata Forms */}
-				{photoSubmissions.length > 0 && (
-					<div className="space-y-6 mb-6">
-						<h2 className="text-xl font-semibold text-gray-900">
-							Photo Details ({photoSubmissions.length})
-						</h2>
-
-						{photoSubmissions.map((submission, index) => {
-							const fileUpload = files.find((f) => f.id === submission.id);
-
-							return (
-								<PhotoMetadataCard
-									key={submission.id}
-									file={submission.file}
-									categories={categoriesWithSubmissionInfo}
-									initialData={submission.metadata || undefined}
-									onMetadataChange={(metadata) =>
-										handleMetadataChange(index, metadata)
-									}
-									onRemove={() => handleRemovePhoto(index)}
-									uploadProgress={fileUpload?.progress || 0}
-									uploadError={fileUpload?.error}
-									isUploading={fileUpload?.status === "uploading"}
-									isCompleted={fileUpload?.status === "completed"}
-								/>
-							);
-						})}
-					</div>
-				)}
-
-				{/* Submit Button */}
-				{photoSubmissions.length > 0 && (
-					<div className="bg-white border border-gray-200 rounded-lg p-6">
-						<div className="flex items-center justify-between">
-							<div>
-								<h3 className="font-medium text-gray-900">Ready to Submit</h3>
-								<p className="text-sm text-gray-600">
-									{readyToSubmit} of {photoSubmissions.length} photos ready
-								</p>
-							</div>
-
-							<button
-								type="button"
-								onClick={handleSubmitBatch}
-								disabled={isSubmitting || readyToSubmit === 0}
-								className={cn(
-									"flex items-center space-x-2 px-6 py-3 rounded-lg font-medium",
-									readyToSubmit > 0
-										? "bg-primary text-white hover:bg-primary/90"
-										: "bg-gray-100 text-gray-400 cursor-not-allowed",
-									isSubmitting && "animate-pulse",
-								)}
-							>
-								<Upload className="h-4 w-4" />
-								<span>
-									{isSubmitting
-										? "Uploading..."
-										: `Upload ${readyToSubmit} Photo${readyToSubmit !== 1 ? "s" : ""}`}
-								</span>
-							</button>
+							{/* Submission stats */}
+							{photoSubmissions.length > 0 && (
+								<div className="flex items-center space-x-6 text-sm text-gray-600">
+									<span>{photoSubmissions.length} photos selected</span>
+									<span>{completedUploads} uploaded</span>
+									<span>{completedMetadata} with metadata</span>
+									<span className="font-medium text-primary">
+										{readyToSubmit} ready to submit
+									</span>
+								</div>
+							)}
 						</div>
 					</div>
-				)}
 
-				{/* No photos state */}
-				{photoSubmissions.length === 0 && (
-					<div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
-						<Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 mb-2">
-							No Photos Selected
-						</h3>
-						<p className="text-gray-600">
-							Upload photos using the form above to get started.
-						</p>
+					{/* Upload Zone */}
+					<div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-xl font-semibold text-gray-900">
+								Upload Photos
+							</h2>
+							<span className="text-sm text-gray-500">
+								{categories.length} categor
+								{categories.length !== 1 ? "ies" : "y"} available
+							</span>
+						</div>
+
+						<UploadZone
+							onFilesSelected={handleFilesSelected}
+							maxFiles={10 - photoSubmissions.length}
+							multiple={true}
+							acceptedTypes={["image/jpeg", "image/png"]}
+							maxFileSize={10 * 1024 * 1024} // 10MB
+							disabled={photoSubmissions.length >= 10}
+						/>
+
+						{photoSubmissions.length >= 10 && (
+							<p className="text-sm text-amber-600 mt-2">
+								Maximum of 10 photos per submission. Remove some photos to add
+								more.
+							</p>
+						)}
 					</div>
-				)}
+
+					{/* Upload Progress Display */}
+					{files.length > 0 && (
+						<DetailedUploadProgress
+							uploads={files.map((file) => ({
+								id: file.id,
+								fileName: file.file.name,
+								fileSize: file.file.size,
+								progress: file.progress,
+								status: file.status === "validating" ? "pending" : file.status,
+								error: file.error,
+								speed: file.speed,
+							}))}
+							className="mb-6"
+						/>
+					)}
+
+					{/* Photo Metadata Forms */}
+					{photoSubmissions.length > 0 && (
+						<div className="space-y-6 mb-6">
+							<h2 className="text-xl font-semibold text-gray-900">
+								Photo Details ({photoSubmissions.length})
+							</h2>
+
+							{photoSubmissions.map((submission, index) => {
+								const fileUpload = files.find((f) => f.id === submission.id);
+
+								return (
+									<PhotoMetadataCard
+										key={submission.id}
+										file={submission.file}
+										categories={categoriesWithSubmissionInfo}
+										initialData={submission.metadata || undefined}
+										onMetadataChange={(metadata) =>
+											handleMetadataChange(index, metadata)
+										}
+										onRemove={() => handleRemovePhoto(index)}
+										uploadProgress={fileUpload?.progress || 0}
+										uploadError={fileUpload?.error}
+										isUploading={fileUpload?.status === "uploading"}
+										isCompleted={fileUpload?.status === "completed"}
+									/>
+								);
+							})}
+						</div>
+					)}
+
+					{/* Submit Button */}
+					{photoSubmissions.length > 0 && (
+						<div className="bg-white border border-gray-200 rounded-lg p-6">
+							<div className="flex items-center justify-between">
+								<div>
+									<h3 className="font-medium text-gray-900">Ready to Submit</h3>
+									<p className="text-sm text-gray-600">
+										{readyToSubmit} of {photoSubmissions.length} photos ready
+									</p>
+								</div>
+
+								<button
+									type="button"
+									onClick={handleSubmitBatch}
+									disabled={isSubmitting || readyToSubmit === 0}
+									className={cn(
+										"flex items-center space-x-2 px-6 py-3 rounded-lg font-medium",
+										readyToSubmit > 0
+											? "bg-primary text-white hover:bg-primary/90"
+											: "bg-gray-100 text-gray-400 cursor-not-allowed",
+										isSubmitting && "animate-pulse",
+									)}
+								>
+									<Upload className="h-4 w-4" />
+									<span>
+										{isSubmitting
+											? "Uploading..."
+											: `Upload ${readyToSubmit} Photo${readyToSubmit !== 1 ? "s" : ""}`}
+									</span>
+								</button>
+							</div>
+						</div>
+					)}
+
+					{/* No photos state */}
+					{photoSubmissions.length === 0 && (
+						<div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+							<Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+							<h3 className="text-lg font-medium text-gray-900 mb-2">
+								No Photos Selected
+							</h3>
+							<p className="text-gray-600">
+								Upload photos using the form above to get started.
+							</p>
+						</div>
+					)}
+				</div>
 			</div>
+			<Footer />
 		</div>
 	);
 }

@@ -2,6 +2,7 @@ import type { MetaFunction } from "react-router";
 import { Link } from "react-router";
 import bird from "~/assets/barb-wolfe.png";
 import footer from "~/assets/claudia-uloa.png";
+import { PublicLayout } from "~/components/public-layout";
 import { Button } from "~/components/ui/button";
 
 export const meta: MetaFunction = () => {
@@ -17,34 +18,7 @@ export const meta: MetaFunction = () => {
 
 export default function AboutPage() {
 	return (
-		<div className="min-h-screen bg-white">
-			{/* Navigation */}
-			<nav className="bg-white border-b border-gray-200">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex justify-between items-center h-16">
-						<div className="flex items-center space-x-8">
-							<div className="text-xl font-bold text-gray-900">
-								2025 Wildlife Photo Contest
-							</div>
-							<div className="hidden md:flex space-x-6 text-sm">
-								<Link to="/" className="text-gray-900 hover:text-gray-600">
-									Home
-								</Link>
-								<Link to="/about" className="text-gray-900 hover:text-gray-600">
-									About
-								</Link>
-								<Link
-									to="/contact"
-									className="text-gray-900 hover:text-gray-600"
-								>
-									Contact
-								</Link>
-							</div>
-						</div>
-					</div>
-				</div>
-			</nav>
-
+		<PublicLayout>
 			{/* Main Content */}
 			<div className="flex flex-col lg:flex-row">
 				{/* Left Content */}
@@ -240,15 +214,6 @@ export default function AboutPage() {
 					<p className="text-sm">© 2025 Claudia Ulloa. All rights reserved.</p>
 				</div>
 			</div>
-
-			{/* Footer */}
-			<footer className="bg-white py-8">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center text-sm text-gray-600">
-						© 2025 WDA Wildlife Photo Contest. All rights reserved.
-					</div>
-				</div>
-			</footer>
-		</div>
+		</PublicLayout>
 	);
 }

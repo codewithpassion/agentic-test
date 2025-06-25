@@ -8,12 +8,15 @@ import {
 	ScrollRestoration,
 	data,
 	isRouteErrorResponse,
+	useLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./tailwind.css";
+import { AuthProvider } from "~/contexts/auth-context";
 import { TRPCProvider } from "~/providers/trpc-provider";
 import { authFactory } from "~~/auth";
+import type { AuthUser } from "~~/types";
 
 export const links: Route.LinksFunction = () => [
 	{ rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -59,9 +62,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+	const { session } = useLoaderData<typeof loader>();
+
+	// @ts-ignore
+	const user: AuthUser | undefined = session?.user || undefined;
+
 	return (
 		<TRPCProvider>
-			<Outlet />
+			<AuthProvider user={user}>
+				<Outlet />
+			</AuthProvider>
 		</TRPCProvider>
 	);
 }
