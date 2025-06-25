@@ -60,7 +60,7 @@ export function LoginPage() {
 						Sign in to your account
 					</CardTitle>
 					<CardDescription className="text-center">
-						Enter your email to receive a magic link
+						Enter your email to receive a login link
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -92,30 +92,9 @@ export function LoginPage() {
 
 						<Button type="submit" className="w-full" disabled={submitting}>
 							<Mail className="w-4 h-4 mr-2" />
-							{submitting ? "Sending..." : "Send Magic Link"}
+							{submitting ? "Sending..." : "Send Login Link"}
 						</Button>
 					</form>
-
-					<div className="relative my-6">
-						<div className="absolute inset-0 flex items-center">
-							<div className="w-full border-t border-gray-300" />
-						</div>
-						<div className="relative flex justify-center text-sm">
-							<span className="bg-white px-2 text-gray-500">Or</span>
-						</div>
-					</div>
-
-					<div className="text-center">
-						<p className="text-sm text-gray-600">
-							Don't have an account?{" "}
-							<Link
-								to="/signup"
-								className="font-medium text-gray-900 hover:underline"
-							>
-								Sign up
-							</Link>
-						</p>
-					</div>
 
 					<Outlet />
 				</CardContent>
