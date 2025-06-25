@@ -108,15 +108,7 @@ export function AdminDashboard() {
 	return (
 		<div className="space-y-6">
 			{/* Welcome message */}
-			<div className="flex justify-between items-center">
-				<div>
-					<h1 className="text-2xl font-bold text-gray-900">
-						Welcome to Admin Dashboard
-					</h1>
-					<p className="text-gray-600">
-						Manage your photo competitions and moderate content.
-					</p>
-				</div>
+			<div className="flex justify-end-safe items-end-safe">
 				<Button
 					variant="outline"
 					size="sm"
