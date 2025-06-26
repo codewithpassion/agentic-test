@@ -6,7 +6,7 @@ import { protectedProcedure, publicProcedure, router } from "../router";
 
 export const votesRouter = router({
 	/**
-	 * Vote for a photo (enforces one vote per category per user)
+	 * Vote for a photo (enforces 3 votes per user per competition)
 	 */
 	vote: protectedProcedure
 		.input(
@@ -18,7 +18,7 @@ export const votesRouter = router({
 			const { db, user } = ctx;
 			const { photoId } = input;
 
-			// Get the photo to find its category
+			// Get the photo to find its category and competition
 			const photo = await db
 				.select({
 					id: photos.id,
@@ -45,34 +45,43 @@ export const votesRouter = router({
 				});
 			}
 
-			// Check if user has already voted in this category
-			const existingVote = await db
+			// Check if user has already voted for this specific photo
+			const existingVoteForPhoto = await db
+				.select()
+				.from(votes)
+				.where(and(eq(votes.userId, user.id), eq(votes.photoId, photoId)))
+				.get();
+
+			if (existingVoteForPhoto) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "You have already voted for this photo",
+				});
+			}
+
+			// Count user's total votes in this competition
+			const userVotesInCompetition = await db
 				.select({
 					voteId: votes.id,
-					photoId: votes.photoId,
 				})
 				.from(votes)
 				.innerJoin(photos, eq(votes.photoId, photos.id))
 				.where(
 					and(
 						eq(votes.userId, user.id),
-						eq(photos.categoryId, photo.categoryId),
+						eq(photos.competitionId, photo.competitionId),
 					),
-				)
-				.get();
+				);
 
-			// If user has voted in this category, handle the logic
-			if (existingVote) {
-				// Don't allow voting for the same photo again
-				if (existingVote.photoId === photoId) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "You have already voted for this photo",
-					});
-				}
+			const totalVotes = userVotesInCompetition.length;
 
-				// Remove the old vote
-				await db.delete(votes).where(eq(votes.id, existingVote.voteId));
+			// Check if user has reached the 3-vote limit
+			if (totalVotes >= 3) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"You've used all 3 votes. Remove a vote to vote for another photo.",
+				});
 			}
 
 			// Add the new vote
@@ -84,7 +93,7 @@ export const votesRouter = router({
 				createdAt: new Date(),
 			});
 
-			// Get updated vote count - try a different approach
+			// Get updated vote count for the photo
 			const allVotes = await db
 				.select()
 				.from(votes)
@@ -97,14 +106,15 @@ export const votesRouter = router({
 				photoId,
 				userId: user.id,
 				voteCount: voteCount,
-				allVotes: allVotes.map((v) => ({ id: v.id, userId: v.userId })),
+				userTotalVotes: totalVotes + 1,
 			});
 
 			return {
 				success: true,
 				photoId,
 				voteCount: voteCount,
-				previousVotePhotoId: existingVote?.photoId,
+				userTotalVotes: totalVotes + 1,
+				remainingVotes: 3 - (totalVotes + 1),
 			};
 		}),
 
@@ -135,10 +145,19 @@ export const votesRouter = router({
 				});
 			}
 
+			// Get the photo to find its competition
+			const photo = await db
+				.select({
+					competitionId: photos.competitionId,
+				})
+				.from(photos)
+				.where(eq(photos.id, photoId))
+				.get();
+
 			// Remove the vote
 			await db.delete(votes).where(eq(votes.id, existingVote.id));
 
-			// Get updated vote count - use same approach as vote
+			// Get updated vote count for the photo
 			const allVotes = await db
 				.select()
 				.from(votes)
@@ -146,10 +165,28 @@ export const votesRouter = router({
 
 			const voteCount = allVotes.length;
 
+			// Count user's remaining votes in this competition
+			const userVotesInCompetition = await db
+				.select({
+					voteId: votes.id,
+				})
+				.from(votes)
+				.innerJoin(photos, eq(votes.photoId, photos.id))
+				.where(
+					and(
+						eq(votes.userId, user.id),
+						eq(photos.competitionId, photo?.competitionId || ""),
+					),
+				);
+
+			const totalVotes = userVotesInCompetition.length;
+
 			return {
 				success: true,
 				photoId,
 				voteCount: voteCount,
+				userTotalVotes: totalVotes,
+				remainingVotes: 3 - totalVotes,
 			};
 		}),
 
@@ -308,6 +345,53 @@ export const votesRouter = router({
 			return {
 				voteCounts: voteCountMap,
 				userVotes,
+			};
+		}),
+
+	/**
+	 * Get user's vote statistics for a competition
+	 */
+	getUserVoteStats: protectedProcedure
+		.input(
+			z.object({
+				competitionId: z.string(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, user } = ctx;
+			const { competitionId } = input;
+
+			// Get all user's votes in this competition
+			const userVotes = await db
+				.select({
+					voteId: votes.id,
+					photoId: votes.photoId,
+					votedAt: votes.createdAt,
+					photo: {
+						id: photos.id,
+						title: photos.title,
+						categoryId: photos.categoryId,
+						categoryName: photos.categoryId,
+					},
+				})
+				.from(votes)
+				.innerJoin(photos, eq(votes.photoId, photos.id))
+				.where(
+					and(
+						eq(votes.userId, user.id),
+						eq(photos.competitionId, competitionId),
+					),
+				)
+				.orderBy(sql`${votes.createdAt} DESC`);
+
+			const totalVotes = userVotes.length;
+			const remainingVotes = 3 - totalVotes;
+
+			return {
+				totalVotes,
+				remainingVotes,
+				maxVotes: 3,
+				votes: userVotes,
 			};
 		}),
 });

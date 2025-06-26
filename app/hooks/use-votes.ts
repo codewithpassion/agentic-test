@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { trpc } from "~/lib/trpc";
+import { useAuth } from "./use-auth";
 
 /**
  * Hook to handle voting for a photo with optimistic updates
@@ -46,7 +47,7 @@ export function useVoteForPhoto(photoId: string, categoryId?: string) {
 					},
 				);
 			}
-			toast.success("Vote recorded!");
+			toast.success(`Vote recorded! ${data.remainingVotes} votes remaining.`);
 		},
 		onError: (err, newVote, context) => {
 			// Revert the optimistic update
@@ -56,8 +57,12 @@ export function useVoteForPhoto(photoId: string, categoryId?: string) {
 			console.error("Failed to vote:", err);
 
 			// Show user-friendly error message
-			if (err.message.includes("already voted")) {
-				toast.error("You've already voted in this category");
+			if (err.message.includes("already voted for this photo")) {
+				toast.error("You've already voted for this photo");
+			} else if (err.message.includes("used all 3 votes")) {
+				toast.error(
+					"You've used all 3 votes. Remove a vote to vote for another photo.",
+				);
 			} else if (err.message.includes("NOT_FOUND")) {
 				toast.error("Photo not found");
 			} else if (err.message.includes("UNAUTHORIZED")) {
@@ -74,6 +79,7 @@ export function useVoteForPhoto(photoId: string, categoryId?: string) {
 			}
 			void utils.votes.getUserVotes.invalidate();
 			void utils.votes.getVoteCounts.invalidate();
+			void utils.votes.getUserVoteStats.invalidate();
 		},
 	});
 
@@ -114,7 +120,9 @@ export function useVoteForPhoto(photoId: string, categoryId?: string) {
 					},
 				);
 			}
-			toast.success("Vote removed!");
+			toast.success(
+				`Vote removed! You have ${data.remainingVotes} votes remaining.`,
+			);
 		},
 		onError: (err, newVote, context) => {
 			// Revert the optimistic update
@@ -140,6 +148,7 @@ export function useVoteForPhoto(photoId: string, categoryId?: string) {
 			}
 			void utils.votes.getUserVotes.invalidate();
 			void utils.votes.getVoteCounts.invalidate();
+			void utils.votes.getUserVoteStats.invalidate();
 		},
 	});
 
@@ -182,6 +191,20 @@ export function useVoteCounts(photoIds: string[]) {
 		{ photoIds },
 		{
 			enabled: photoIds.length > 0,
+			staleTime: 1000 * 60 * 5, // 5 minutes
+		},
+	);
+}
+
+/**
+ * Hook to get user's vote statistics for a competition
+ */
+export function useUserVoteStats(competitionId: string) {
+	const { user } = useAuth();
+	return trpc.votes.getUserVoteStats.useQuery(
+		{ competitionId },
+		{
+			enabled: !!user && !!competitionId,
 			staleTime: 1000 * 60 * 5, // 5 minutes
 		},
 	);

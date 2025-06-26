@@ -9,8 +9,9 @@ import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
 import { PublicLayout } from "~/components/public-layout";
 import { Button } from "~/components/ui/button";
 import { SubmitPhotoCTA } from "~/components/ui/submit-photo-cta";
+import { VoteIndicator } from "~/components/ui/vote-indicator";
 import { useAuth } from "~/hooks/use-auth";
-import { useVoteCounts } from "~/hooks/use-votes";
+import { useUserVoteStats, useVoteCounts } from "~/hooks/use-votes";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 import type { PhotoWithRelations } from "../../api/database/schema";
@@ -48,9 +49,6 @@ export default function CompetitionGallery() {
 	const { competitionId, categoryId } = useLoaderData<LoaderData>();
 	const { user } = useAuth();
 	const navigate = useNavigate();
-	const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-		categoryId,
-	);
 	const [layout, setLayout] = useState<"grid" | "masonry">("masonry");
 	const [sortBy, setSortBy] = useState<
 		"newest" | "oldest" | "title" | "location"
@@ -88,7 +86,7 @@ export default function CompetitionGallery() {
 			})
 		: trpc.photos.getByCompetition.useQuery({
 				competitionId,
-				categoryId: selectedCategory,
+				categoryId: undefined, // Don't filter by category when viewing all photos
 				limit: 100,
 				offset: 0,
 				status: "approved",
@@ -99,6 +97,9 @@ export default function CompetitionGallery() {
 	// Get vote counts for all photos
 	const photoIds = photos.map((p) => p.id);
 	const { data: voteData } = useVoteCounts(photoIds);
+
+	// Get user's vote stats
+	const { data: voteStats } = useUserVoteStats(competitionId);
 
 	// Enhance photos with vote data
 	const photosWithVotes = photos.map((photo) => ({
@@ -150,20 +151,25 @@ export default function CompetitionGallery() {
 				utils.votes.getVoteCounts.setData({ photoIds }, context.previousData);
 			}
 
-			if (err.message.includes("already voted")) {
-				toast.error("You've already voted in this category");
+			if (err.message.includes("already voted for this photo")) {
+				toast.error("You've already voted for this photo");
+			} else if (err.message.includes("used all 3 votes")) {
+				toast.error(
+					"You've used all 3 votes. Remove a vote to vote for another photo.",
+				);
 			} else if (err.message.includes("UNAUTHORIZED")) {
 				toast.error("Please login to vote");
 			} else {
 				toast.error("Failed to vote. Please try again.");
 			}
 		},
-		onSuccess: () => {
-			toast.success("Vote recorded!");
+		onSuccess: (data) => {
+			toast.success(`Vote recorded! ${data.remainingVotes} votes remaining.`);
 		},
 		onSettled: () => {
 			// Always refetch after error or success
 			utils.votes.getVoteCounts.invalidate({ photoIds });
+			utils.votes.getUserVoteStats.invalidate({ competitionId });
 		},
 	});
 
@@ -201,12 +207,15 @@ export default function CompetitionGallery() {
 			}
 			toast.error("Failed to remove vote. Please try again.");
 		},
-		onSuccess: () => {
-			toast.success("Vote removed!");
+		onSuccess: (data) => {
+			toast.success(
+				`Vote removed! You have ${data.remainingVotes} votes remaining.`,
+			);
 		},
 		onSettled: () => {
 			// Always refetch after error or success
 			utils.votes.getVoteCounts.invalidate({ photoIds });
+			utils.votes.getUserVoteStats.invalidate({ competitionId });
 		},
 	});
 
@@ -222,6 +231,13 @@ export default function CompetitionGallery() {
 		if (photo.hasVoted) {
 			unvoteMutation.mutate({ photoId: photo.id });
 		} else {
+			// Check if user has votes remaining
+			if (voteStats && voteStats.remainingVotes === 0) {
+				toast.error(
+					"You've used all 3 votes. Remove a vote to vote for another photo.",
+				);
+				return;
+			}
 			voteMutation.mutate({ photoId: photo.id });
 		}
 	};
@@ -281,14 +297,23 @@ export default function CompetitionGallery() {
 						<h1 className="text-3xl font-bold text-gray-900">
 							{categoryId && category ? category.name : "Photo Gallery"}
 						</h1>
-						{competition.status === "active" && (
-							<Link to={user ? `/submit/${competitionId}` : "/login"}>
-								<Button>
-									<Camera className="w-4 h-4 mr-2" />
-									Submit Photo
-								</Button>
-							</Link>
-						)}
+						<div className="flex items-center gap-4">
+							{user && voteStats && (
+								<VoteIndicator
+									totalVotes={voteStats.totalVotes}
+									maxVotes={voteStats.maxVotes}
+									size="md"
+								/>
+							)}
+							{competition.status === "active" && (
+								<Link to={user ? `/submit/${competitionId}` : "/login"}>
+									<Button>
+										<Camera className="w-4 h-4 mr-2" />
+										Submit Photo
+									</Button>
+								</Link>
+							)}
+						</div>
 					</div>
 
 					{/* Category pills */}
@@ -298,7 +323,7 @@ export default function CompetitionGallery() {
 								to={`/competitions/${competitionId}/gallery`}
 								className={cn(
 									"px-4 py-2 rounded-full text-sm transition-colors",
-									!categoryId && !selectedCategory
+									!categoryId
 										? "bg-gray-900 text-white"
 										: "bg-gray-100 text-gray-700 hover:bg-gray-200",
 								)}
@@ -311,8 +336,7 @@ export default function CompetitionGallery() {
 									to={`/competitions/${competitionId}/gallery/${cat.id}`}
 									className={cn(
 										"px-4 py-2 rounded-full text-sm transition-colors",
-										cat.id === categoryId ||
-											(!categoryId && cat.id === selectedCategory)
+										cat.id === categoryId
 											? "bg-gray-900 text-white"
 											: "bg-gray-100 text-gray-700 hover:bg-gray-200",
 									)}

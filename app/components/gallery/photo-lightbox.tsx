@@ -11,8 +11,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "~/hooks/use-auth";
-import { useVoteForPhoto } from "~/hooks/use-votes";
+import { useUserVoteStats, useVoteForPhoto } from "~/hooks/use-votes";
 import type { PhotoWithRelations } from "../../../api/database/schema";
+import { VoteIndicator } from "../ui/vote-indicator";
 
 // Extend PhotoWithRelations to include vote data
 type PhotoWithVotes = PhotoWithRelations & {
@@ -40,6 +41,11 @@ export function PhotoLightbox({
 	const navigate = useNavigate();
 	const { user } = useAuth();
 
+	// Get user's vote stats
+	const { data: voteStats } = useUserVoteStats(
+		currentPhoto?.competitionId || "",
+	);
+
 	// Voting functionality
 	const {
 		vote,
@@ -60,6 +66,13 @@ export function PhotoLightbox({
 		if (currentPhoto.hasVoted) {
 			unvote();
 		} else {
+			// Check if user has votes remaining
+			if (voteStats && voteStats.remainingVotes === 0) {
+				toast.error(
+					"You've used all 3 votes. Remove a vote to vote for another photo.",
+				);
+				return;
+			}
 			vote();
 		}
 	};
@@ -290,10 +303,17 @@ export function PhotoLightbox({
 			<div className="w-80 bg-white border-l border-gray-200 flex flex-col">
 				{/* Header */}
 				<div className="p-6 border-b border-gray-200">
-					<div className="mb-2">
+					<div className="mb-2 flex items-center justify-between">
 						<span className="text-sm text-gray-500">
 							{currentIndex + 1} of {photos.length}
 						</span>
+						{user && voteStats && (
+							<VoteIndicator
+								totalVotes={voteStats.totalVotes}
+								maxVotes={voteStats.maxVotes}
+								size="sm"
+							/>
+						)}
 					</div>
 					<h2 className="text-xl font-semibold text-gray-900 leading-tight">
 						{currentPhoto.title}
