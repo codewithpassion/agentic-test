@@ -151,7 +151,7 @@ export default function HomePage() {
 									key={category.id}
 									to={
 										activeCompetition
-											? `/competitions/${activeCompetition.id}/categories/${category.id}`
+											? `/competitions/${activeCompetition.id}/gallery/${category.id}`
 											: "#"
 									}
 									className="group cursor-pointer block"

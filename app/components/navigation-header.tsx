@@ -59,7 +59,7 @@ export function NavigationHeader() {
 									key={category.id}
 									to={
 										activeCompetition
-											? `/competitions/${activeCompetition.id}/categories/${category.id}`
+											? `/competitions/${activeCompetition.id}/gallery/${category.id}`
 											: "#"
 									}
 									className="text-gray-900 hover:text-gray-600"

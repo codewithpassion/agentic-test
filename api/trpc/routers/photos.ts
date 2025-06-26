@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { categories, competitions, photos } from "../../database/schema";
+import { categories, competitions, photos, votes } from "../../database/schema";
 import {
 	batchPhotoSubmissionSchema,
 	getPhotosByCategorySchema,
@@ -294,7 +294,38 @@ export const photosRouter = router({
 					});
 				}
 
-				return photo;
+				// Get vote count and user's vote status
+				const allVotes = await ctx.db
+					.select()
+					.from(votes)
+					.where(eq(votes.photoId, input.id));
+
+				const voteCount = allVotes.length;
+
+				let hasVoted = false;
+				if (ctx.user) {
+					const userVote = await ctx.db
+						.select()
+						.from(votes)
+						.where(
+							and(eq(votes.userId, ctx.user.id), eq(votes.photoId, input.id)),
+						)
+						.get();
+					hasVoted = !!userVote;
+				}
+
+				console.log("Photo vote data:", {
+					photoId: input.id,
+					voteCount: voteCount,
+					hasVoted,
+					userId: ctx.user?.id,
+				});
+
+				return {
+					...photo,
+					voteCount: voteCount,
+					hasVoted,
+				};
 			} catch (error) {
 				if (error instanceof TRPCError) throw error;
 				console.error("Get photo by ID error:", error);

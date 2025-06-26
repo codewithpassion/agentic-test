@@ -47,36 +47,38 @@ export function GalleryFilters({
 			<div
 				className={cn("flex flex-wrap items-center gap-2 text-sm", className)}
 			>
-				{/* Category Pills */}
-				<div className="flex flex-wrap gap-1">
-					<button
-						type="button"
-						onClick={() => onCategoryChange(undefined)}
-						className={cn(
-							"px-3 py-1 rounded-full border transition-colors",
-							!selectedCategory
-								? "bg-black text-white border-black"
-								: "bg-white text-gray-700 border-gray-300 hover:border-gray-400",
-						)}
-					>
-						All
-					</button>
-					{categories.map((category) => (
+				{/* Category Pills - only show if categories exist */}
+				{categories.length > 0 && (
+					<div className="flex flex-wrap gap-1">
 						<button
 							type="button"
-							key={category.id}
-							onClick={() => onCategoryChange(category.id)}
+							onClick={() => onCategoryChange(undefined)}
 							className={cn(
 								"px-3 py-1 rounded-full border transition-colors",
-								selectedCategory === category.id
+								!selectedCategory
 									? "bg-black text-white border-black"
 									: "bg-white text-gray-700 border-gray-300 hover:border-gray-400",
 							)}
 						>
-							{category.name}
+							All
 						</button>
-					))}
-				</div>
+						{categories.map((category) => (
+							<button
+								type="button"
+								key={category.id}
+								onClick={() => onCategoryChange(category.id)}
+								className={cn(
+									"px-3 py-1 rounded-full border transition-colors",
+									selectedCategory === category.id
+										? "bg-black text-white border-black"
+										: "bg-white text-gray-700 border-gray-300 hover:border-gray-400",
+								)}
+							>
+								{category.name}
+							</button>
+						))}
+					</div>
+				)}
 
 				{/* Layout & Sort Controls */}
 				<div className="flex items-center gap-1 ml-auto">

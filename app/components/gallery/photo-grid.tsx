@@ -1,16 +1,23 @@
+import { Heart } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "~/lib/utils";
 import type { PhotoWithRelations } from "../../../api/database/schema";
 import { LazyImage } from "./lazy-image";
 
+// Extend PhotoWithRelations to include vote data
+type PhotoWithVotes = PhotoWithRelations & {
+	voteCount?: number;
+	hasVoted?: boolean;
+};
+
 interface PhotoGridProps {
-	photos: PhotoWithRelations[];
+	photos: PhotoWithVotes[];
 	columns?: 2 | 3 | 4 | 5;
 	layout?: "grid" | "masonry";
 	aspectRatio?: "square" | "portrait" | "landscape" | "auto";
 	gap?: "sm" | "md" | "lg";
 	showMetadata?: boolean;
-	onPhotoClick?: (photo: PhotoWithRelations, index: number) => void;
+	onPhotoClick?: (photo: PhotoWithVotes, index: number) => void;
 	loading?: boolean;
 	className?: string;
 }
@@ -44,10 +51,7 @@ export function PhotoGrid({
 	const photoColumns = useMemo(() => {
 		if (layout !== "masonry") return [photos];
 
-		const cols: PhotoWithRelations[][] = Array.from(
-			{ length: columns },
-			() => [],
-		);
+		const cols: PhotoWithVotes[][] = Array.from({ length: columns }, () => []);
 		photos.forEach((photo, index) => {
 			cols[index % columns].push(photo);
 		});
@@ -107,7 +111,10 @@ export function PhotoGrid({
 						{columnPhotos.map((photo, index) => {
 							const photoIndex = photos.findIndex((p) => p.id === photo.id);
 							return (
-								<div key={photo.id} className="break-inside-avoid">
+								<div
+									key={photo.id}
+									className="break-inside-avoid relative group"
+								>
 									<LazyImage
 										src={`/api/photos/serve/${encodeURIComponent(photo.filePath)}`}
 										alt={photo.title}
@@ -116,6 +123,22 @@ export function PhotoGrid({
 										onLoad={handlePhotoLoad}
 										className="rounded-lg shadow-sm hover:shadow-md transition-shadow"
 									/>
+									{/* Vote Count Overlay */}
+									{photo.voteCount !== undefined && (
+										<div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+											<Heart
+												className={cn(
+													"h-4 w-4",
+													photo.hasVoted
+														? "fill-red-500 text-red-500"
+														: "text-gray-600",
+												)}
+											/>
+											<span className="text-sm font-medium text-gray-900">
+												{photo.voteCount}
+											</span>
+										</div>
+									)}
 									{showMetadata && (
 										<div className="mt-2 space-y-1">
 											<h4 className="font-medium text-sm line-clamp-1">
@@ -147,7 +170,7 @@ export function PhotoGrid({
 			className={cn("grid", columnClasses[columns], gapClasses[gap], className)}
 		>
 			{photos.map((photo, index) => (
-				<div key={photo.id} className="group">
+				<div key={photo.id} className="group relative">
 					<LazyImage
 						src={`/api/photos/serve/${encodeURIComponent(photo.filePath)}`}
 						alt={photo.title}
@@ -156,6 +179,22 @@ export function PhotoGrid({
 						onLoad={handlePhotoLoad}
 						className="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 group-hover:scale-[1.02]"
 					/>
+					{/* Vote Count Overlay */}
+					{photo.voteCount !== undefined && (
+						<div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+							<Heart
+								className={cn(
+									"h-4 w-4",
+									photo.hasVoted
+										? "fill-red-500 text-red-500"
+										: "text-gray-600",
+								)}
+							/>
+							<span className="text-sm font-medium text-gray-900">
+								{photo.voteCount}
+							</span>
+						</div>
+					)}
 					{showMetadata && (
 						<div className="mt-3 space-y-1">
 							<h4 className="font-medium text-sm line-clamp-1">

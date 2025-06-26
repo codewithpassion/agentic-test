@@ -32,6 +32,7 @@ This is a modern React application deployed to Cloudflare with authentication, s
 - React Query for caching and data fetching
 
 ## Database Schema Notes
+- The database schema is under `/api/database/schema.ts`
 - User table field is `roles` (not `role`) - single text field with enum values
 - Timestamp fields return Date objects but may be nullable - always check before using
 - Use proper query building with `and()` for multiple WHERE conditions

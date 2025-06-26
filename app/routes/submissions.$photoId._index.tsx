@@ -6,6 +6,8 @@ import { ArrowLeft, Calendar, Camera, MapPin } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { PublicLayout } from "~/components/public-layout";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
+import { VoteButton } from "~/components/ui/vote-button";
+import { useVoteForPhoto } from "~/hooks/use-votes";
 import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
 
@@ -22,6 +24,22 @@ export default function PhotoDisplay() {
 		{ id: photoId || "" },
 		{ enabled: !!photoId },
 	);
+
+	// Voting functionality
+	const {
+		vote,
+		unvote,
+		isLoading: voteLoading,
+	} = useVoteForPhoto(photoId || "", photo?.categoryId);
+
+	const handleVote = () => {
+		if (!photo) return;
+		if (photo.hasVoted) {
+			unvote();
+		} else {
+			vote();
+		}
+	};
 
 	// Handle not found
 	if (!photoId) {
@@ -129,6 +147,21 @@ export default function PhotoDisplay() {
 										{photo.competition?.title || ""} •{" "}
 										{photo.category?.name || ""}
 									</p>
+
+									{/* Vote Button */}
+									{photo.status === "approved" && (
+										<div className="mb-4">
+											<VoteButton
+												photoId={photo.id}
+												voteCount={photo.voteCount || 0}
+												hasVoted={photo.hasVoted || false}
+												onVote={handleVote}
+												loading={voteLoading}
+												size="lg"
+											/>
+										</div>
+									)}
+
 									{photo.description && (
 										<p className="text-gray-700 leading-relaxed">
 											{photo.description}
