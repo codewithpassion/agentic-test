@@ -1,7 +1,8 @@
 import { Camera } from "lucide-react";
 import { useState } from "react";
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
-import { Link, useLoaderData } from "react-router";
+import { Link, useLoaderData, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { GalleryFilters } from "~/components/gallery/gallery-filters";
 import { PhotoGrid } from "~/components/gallery/photo-grid";
 import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
@@ -46,6 +47,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export default function CompetitionGallery() {
 	const { competitionId, categoryId } = useLoaderData<LoaderData>();
 	const { user } = useAuth();
+	const navigate = useNavigate();
 	const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
 		categoryId,
 	);
@@ -112,6 +114,116 @@ export default function CompetitionGallery() {
 
 	const handleLightboxNavigate = (index: number) => {
 		setLightboxIndex(index);
+	};
+
+	// Get tRPC utils for query invalidation
+	const utils = trpc.useContext();
+
+	// Voting mutations with optimistic updates
+	const voteMutation = trpc.votes.vote.useMutation({
+		onMutate: async ({ photoId }) => {
+			// Cancel any outgoing refetches
+			await utils.votes.getVoteCounts.cancel({ photoIds });
+
+			// Snapshot the previous value
+			const previousData = utils.votes.getVoteCounts.getData({ photoIds });
+
+			// Optimistically update
+			if (previousData) {
+				utils.votes.getVoteCounts.setData(
+					{ photoIds },
+					{
+						voteCounts: {
+							...previousData.voteCounts,
+							[photoId]: (previousData.voteCounts[photoId] || 0) + 1,
+						},
+						userVotes: [...previousData.userVotes, photoId],
+					},
+				);
+			}
+
+			return { previousData };
+		},
+		onError: (err, _, context) => {
+			// Rollback on error
+			if (context?.previousData) {
+				utils.votes.getVoteCounts.setData({ photoIds }, context.previousData);
+			}
+
+			if (err.message.includes("already voted")) {
+				toast.error("You've already voted in this category");
+			} else if (err.message.includes("UNAUTHORIZED")) {
+				toast.error("Please login to vote");
+			} else {
+				toast.error("Failed to vote. Please try again.");
+			}
+		},
+		onSuccess: () => {
+			toast.success("Vote recorded!");
+		},
+		onSettled: () => {
+			// Always refetch after error or success
+			utils.votes.getVoteCounts.invalidate({ photoIds });
+		},
+	});
+
+	const unvoteMutation = trpc.votes.unvote.useMutation({
+		onMutate: async ({ photoId }) => {
+			// Cancel any outgoing refetches
+			await utils.votes.getVoteCounts.cancel({ photoIds });
+
+			// Snapshot the previous value
+			const previousData = utils.votes.getVoteCounts.getData({ photoIds });
+
+			// Optimistically update
+			if (previousData) {
+				utils.votes.getVoteCounts.setData(
+					{ photoIds },
+					{
+						voteCounts: {
+							...previousData.voteCounts,
+							[photoId]: Math.max(
+								0,
+								(previousData.voteCounts[photoId] || 0) - 1,
+							),
+						},
+						userVotes: previousData.userVotes.filter((id) => id !== photoId),
+					},
+				);
+			}
+
+			return { previousData };
+		},
+		onError: (err, _, context) => {
+			// Rollback on error
+			if (context?.previousData) {
+				utils.votes.getVoteCounts.setData({ photoIds }, context.previousData);
+			}
+			toast.error("Failed to remove vote. Please try again.");
+		},
+		onSuccess: () => {
+			toast.success("Vote removed!");
+		},
+		onSettled: () => {
+			// Always refetch after error or success
+			utils.votes.getVoteCounts.invalidate({ photoIds });
+		},
+	});
+
+	const handleVoteClick = (
+		photo: PhotoWithRelations & { hasVoted?: boolean },
+	) => {
+		if (!user) {
+			toast.info("Please login to vote");
+			navigate("/login");
+			return;
+		}
+
+		if (photo.hasVoted) {
+			unvoteMutation.mutate({ photoId: photo.id });
+		} else {
+			voteMutation.mutate({ photoId: photo.id });
+		}
 	};
 
 	const isLoading =
@@ -236,6 +348,7 @@ export default function CompetitionGallery() {
 					gap="md"
 					showMetadata={showMetadata}
 					onPhotoClick={handlePhotoClick}
+					onVoteClick={handleVoteClick}
 					loading={isLoading}
 					className="mb-12"
 				/>

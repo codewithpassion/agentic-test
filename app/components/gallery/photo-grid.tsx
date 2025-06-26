@@ -18,6 +18,7 @@ interface PhotoGridProps {
 	gap?: "sm" | "md" | "lg";
 	showMetadata?: boolean;
 	onPhotoClick?: (photo: PhotoWithVotes, index: number) => void;
+	onVoteClick?: (photo: PhotoWithVotes) => void;
 	loading?: boolean;
 	className?: string;
 }
@@ -30,6 +31,7 @@ export function PhotoGrid({
 	gap = "md",
 	showMetadata = false,
 	onPhotoClick,
+	onVoteClick,
 	loading = false,
 	className,
 }: PhotoGridProps) {
@@ -125,10 +127,20 @@ export function PhotoGrid({
 									/>
 									{/* Vote Count Overlay */}
 									{photo.voteCount !== undefined && (
-										<div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												onVoteClick?.(photo);
+											}}
+											className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm hover:bg-white hover:shadow-md transition-all cursor-pointer"
+											title={
+												photo.hasVoted ? "Remove vote" : "Vote for this photo"
+											}
+										>
 											<Heart
 												className={cn(
-													"h-4 w-4",
+													"h-4 w-4 transition-colors",
 													photo.hasVoted
 														? "fill-red-500 text-red-500"
 														: "text-gray-600",
@@ -137,7 +149,7 @@ export function PhotoGrid({
 											<span className="text-sm font-medium text-gray-900">
 												{photo.voteCount}
 											</span>
-										</div>
+										</button>
 									)}
 									{showMetadata && (
 										<div className="mt-2 space-y-1">
@@ -181,10 +193,18 @@ export function PhotoGrid({
 					/>
 					{/* Vote Count Overlay */}
 					{photo.voteCount !== undefined && (
-						<div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onVoteClick?.(photo);
+							}}
+							className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm hover:bg-white hover:shadow-md transition-all cursor-pointer"
+							title={photo.hasVoted ? "Remove vote" : "Vote for this photo"}
+						>
 							<Heart
 								className={cn(
-									"h-4 w-4",
+									"h-4 w-4 transition-colors",
 									photo.hasVoted
 										? "fill-red-500 text-red-500"
 										: "text-gray-600",
@@ -193,7 +213,7 @@ export function PhotoGrid({
 							<span className="text-sm font-medium text-gray-900">
 								{photo.voteCount}
 							</span>
-						</div>
+						</button>
 					)}
 					{showMetadata && (
 						<div className="mt-3 space-y-1">
