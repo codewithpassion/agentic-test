@@ -1,11 +1,7 @@
 import {
 	ChevronRight,
-	Flag,
-	Image,
 	LayoutDashboard,
-	Plus,
-	Settings,
-	Trophy,
+	ListTodo,
 	Users,
 	X,
 } from "lucide-react";
@@ -36,47 +32,10 @@ const navigationItems: NavItem[] = [
 		href: "/admin",
 	},
 	{
-		icon: Trophy,
-		label: "Competitions",
-		href: "/admin/competitions",
-		permission: "manage_competitions",
-		children: [
-			{
-				icon: ChevronRight,
-				label: "All Competitions",
-				href: "/admin/competitions",
-			},
-			{
-				icon: Plus,
-				label: "New Competition",
-				href: "/admin/competitions/new",
-			},
-		],
+		icon: ListTodo,
+		label: "Todos",
+		href: "/todos",
 	},
-	{
-		icon: Image,
-		label: "Photo Moderation",
-		href: "/admin/moderation",
-		permission: "moderate_content",
-		children: [
-			{
-				icon: ChevronRight,
-				label: "Pending Photos",
-				href: "/admin/moderation/pending",
-			},
-			{
-				icon: ChevronRight,
-				label: "All Photos",
-				href: "/admin/moderation/photos",
-			},
-		],
-	},
-	// {
-	// 	icon: Flag,
-	// 	label: "Reports",
-	// 	href: "/admin/reports",
-	// 	permission: "view_reports",
-	// },
 	{
 		icon: Users,
 		label: "User Management",
@@ -95,12 +54,6 @@ const navigationItems: NavItem[] = [
 			},
 		],
 	},
-	// {
-	// 	icon: Settings,
-	// 	label: "Settings",
-	// 	href: "/admin/settings",
-	// 	role: "superadmin",
-	// },
 ];
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
@@ -197,9 +150,9 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 			{/* Sidebar footer */}
 			<div className="p-4 border-t border-gray-200">
 				<div className="text-xs text-gray-500 text-center">
-					Wildlife Disease Association
+					Todo App
 					<br />
-					Photo Competition Admin
+					Admin Panel
 				</div>
 			</div>
 		</aside>

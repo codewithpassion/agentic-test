@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "wda-2025-photo-comp",
+	"name": "todo-app",
 	"compatibility_date": "2025-02-24",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "./workers/app.ts",
@@ -31,19 +31,12 @@
 			"id": "c2f40294d32e4a7f80fa41d36a9a8754"
 		}
 	],
-	"r2_buckets": [
-		{
-			"binding": "PHOTO_STORAGE",
-			"bucket_name": "photo-gallery-storage",
-			"preview_bucket_name": "photo-gallery-storage-dev"
-		}
-	],
 	/**
 	 * Environment-specific configurations
 	 */
 	"env": {
 		"staging": {
-			"name": "wda-2025-photo-comp-staging",
+			"name": "todo-app-staging",
 			"vars": {
 				"DEV_MODE": "false"
 			},
@@ -59,26 +52,20 @@
 					"binding": "SESSIONS",
 					"id": "YOUR_STAGING_KV_ID"
 				}
-			],
-			"r2_buckets": [
-				{
-					"binding": "PHOTO_STORAGE",
-					"bucket_name": "photo-gallery-storage-staging"
-				}
 			]
 		},
 		"production": {
-			"name": "wda-2025-photo-comp-prod",
+			"name": "todo-app-prod",
 			"vars": {
 				"DEV_MODE": "false",
 				"FROM_EMAIL": "contact@messaging.portcityai.com",
-				"FROM_NAME": "WDA 2025 Photo Comp",
-				"SUPPORT_EMAIL": "wildlifephotocontest@wildlifediseaseassociation.org"
+				"FROM_NAME": "Todo App",
+				"SUPPORT_EMAIL": "support@example.com"
 			},
 			"d1_databases": [
 				{
 					"binding": "DB",
-					"database_name": "wda-2025-photo-comp-prod-db",
+					"database_name": "todo-app-prod-db",
 					"database_id": "beaacf56-b691-4aa5-be2c-7f8033dc62e2"
 				}
 			],
@@ -86,12 +73,6 @@
 				{
 					"binding": "SESSIONS",
 					"id": "d76197df2c6b46f799e3a5b21acdccd8"
-				}
-			],
-			"r2_buckets": [
-				{
-					"binding": "PHOTO_STORAGE",
-					"bucket_name": "wda-2025-photo-comp-prod-storage"
 				}
 			]
 		}

@@ -1,32 +1,26 @@
 /**
- * Public Homepage with Featured Competitions and Photo Galleries
+ * Public Homepage for Todo App
  */
 
-import { ArrowRight, Camera } from "lucide-react";
-import { useState } from "react";
+import { CheckSquare, PlusCircle, Users } from "lucide-react";
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link } from "react-router";
-import { PhotoGrid } from "~/components/gallery/photo-grid";
-import { PhotoLightbox } from "~/components/gallery/photo-lightbox";
 import { PublicLayout } from "~/components/public-layout";
 import { useAuth } from "~/hooks/use-auth";
-import { useVoteCounts } from "~/hooks/use-votes";
-import { trpc } from "~/lib/trpc";
-import type { PhotoWithRelations } from "../../api/database/schema";
 
 export const meta: MetaFunction = () => {
 	return [
-		{ title: "2025 Wildlife Photo Contest - Discover Amazing Photography" },
+		{ title: "Todo App - Organize Your Tasks" },
 		{
 			name: "description",
 			content:
-				"Welcome to the Wildlife Photo Contest, part of the 73rd annual international conference of the Wildlife Disease Association. Showcase wildlife captures and explore photos as stories.",
+				"A simple and efficient todo application to help you organize your tasks and boost productivity.",
 		},
-		{ property: "og:title", content: "2025 Wildlife Photo Contest" },
+		{ property: "og:title", content: "Todo App" },
 		{
 			property: "og:description",
 			content:
-				"Wildlife Photo Contest - Categories including Landscapes/Flora, Wildlife Captive, and Wildlife Free ranging",
+				"Organize your tasks efficiently with our simple todo application",
 		},
 		{ property: "og:type", content: "website" },
 	];
@@ -38,68 +32,7 @@ export async function loader(args: LoaderFunctionArgs) {
 }
 
 export default function HomePage() {
-	const [lightboxOpen, setLightboxOpen] = useState(false);
-	const [lightboxIndex, setLightboxIndex] = useState(0);
 	const { user } = useAuth();
-
-	// Fetch active competitions
-	const { data: competitions = [], isLoading: competitionsLoading } =
-		trpc.competitions.list.useQuery({
-			status: "active",
-			limit: 6,
-		});
-
-	// Get the first active competition
-	const activeCompetition = competitions[0];
-
-	// Get categories for the active competition
-	const { data: categories = [] } = trpc.categories.listByCompetition.useQuery(
-		{ competitionId: activeCompetition?.id || "" },
-		{ enabled: !!activeCompetition?.id },
-	);
-
-	// Fetch photos from active competition for both category backgrounds and recent submissions
-	const { data: photosData, isLoading: photosLoading } =
-		trpc.photos.getByCompetition.useQuery(
-			{
-				competitionId: activeCompetition?.id || "",
-				limit: 50, // Get enough photos for both purposes
-				status: "approved",
-			},
-			{ enabled: !!activeCompetition?.id },
-		);
-
-	const allPhotos = photosData?.photos || [];
-	const recentPhotos = allPhotos.slice(0, 12); // First 12 for recent submissions
-
-	// Get vote counts for recent photos
-	const photoIds = recentPhotos.map((p) => p.id);
-	const { data: voteData } = useVoteCounts(photoIds);
-
-	// Enhance recent photos with vote data
-	const recentPhotosWithVotes = recentPhotos.map((photo) => ({
-		...photo,
-		voteCount: voteData?.voteCounts[photo.id] || 0,
-		hasVoted: voteData?.userVotes.includes(photo.id) || false,
-	}));
-
-	// Create a map of category ID to first photo
-	const categoryPhotos = categories.reduce(
-		(acc, category) => {
-			const firstPhoto = allPhotos.find(
-				(photo) => photo.categoryId === category.id,
-			);
-			acc[category.id] = firstPhoto;
-			return acc;
-		},
-		{} as Record<string, PhotoWithRelations | undefined>,
-	);
-
-	// Handle photo click for lightbox
-	const handlePhotoClick = (photo: PhotoWithRelations, index: number) => {
-		setLightboxIndex(index);
-		setLightboxOpen(true);
-	};
 
 	return (
 		<PublicLayout>
@@ -107,213 +40,87 @@ export default function HomePage() {
 			<div className="relative bg-white py-16">
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 					<h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-						Wildlife Photo Contest
+						Welcome to Todo App
 						<br />
-						<span className="text-gray-700">Categories</span>
+						<span className="text-gray-700">Organize Your Life</span>
 					</h1>
 					<p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-						Welcome to the Wildlife Photo Contest, an event as part of the 73rd
-						annual international conference of the Wildlife Disease Association.
-						This is a platform to showcase the wildlife captures participating
-						in the contest for recognition and prizes. Join us and explore the
-						photos as stories behind them. Click here to start exploring.
+						Keep track of your tasks, stay organized, and boost your
+						productivity with our simple and intuitive todo application. Create,
+						manage, and complete your todos with ease.
 					</p>
 					<Link
-						to={user ? `/submit/${activeCompetition?.id || ""}` : "/login"}
+						to={user ? "/todos" : "/login"}
 						className="inline-flex items-center space-x-2 px-8 py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-lg"
 					>
-						<Camera className="h-5 w-5" />
-						<span>Submit Your Photo</span>
+						<CheckSquare className="h-5 w-5" />
+						<span>{user ? "Go to Your Todos" : "Get Started"}</span>
 					</Link>
 				</div>
 			</div>
 
-			{/* Category Cards Section */}
+			{/* Features Section */}
 			<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-				{categories.length > 0 ? (
-					<div
-						className={`grid grid-cols-1 gap-8 ${
-							categories.length === 1
-								? "md:grid-cols-1 max-w-md mx-auto"
-								: categories.length === 2
-									? "md:grid-cols-2"
-									: "md:grid-cols-3"
-						}`}
-					>
-						{categories.map((category) => {
-							const firstPhoto = categoryPhotos[category.id];
-							const backgroundImage = firstPhoto
-								? `/api/photos/serve/${encodeURIComponent(firstPhoto.filePath)}`
-								: "https://placehold.co/400x300/e5e7eb/9ca3af?text=No+Photos";
-
-							return (
-								<Link
-									key={category.id}
-									to={
-										activeCompetition
-											? `/competitions/${activeCompetition.id}/gallery/${category.id}`
-											: "#"
-									}
-									className="group cursor-pointer block"
-								>
-									<div className="relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-										<div className="aspect-[4/3] relative bg-gray-200">
-											<img
-												src={backgroundImage}
-												alt={category.name}
-												className="w-full h-full object-cover"
-												onLoad={(e) => {
-													e.currentTarget.style.opacity = "1";
-												}}
-												onError={(e) => {
-													console.log("Image failed to load:", backgroundImage);
-													e.currentTarget.src =
-														"https://placehold.co/400x300/e5e7eb/9ca3af?text=No+Photos";
-												}}
-												style={{ opacity: 0, transition: "opacity 0.3s" }}
-											/>
-											<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-											<div className="absolute bottom-4 left-4 right-4 z-10">
-												<h3 className="text-white text-2xl font-bold mb-2 drop-shadow-lg">
-													{category.name}
-												</h3>
-												<p className="text-white text-sm opacity-90 drop-shadow-md">
-													Explore {category.name.toLowerCase()} photography
-												</p>
-											</div>
-										</div>
-									</div>
-								</Link>
-							);
-						})}
-					</div>
-				) : (
-					/* Fallback to static cards if no categories or competition */
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						<Link
-							to={
-								activeCompetition
-									? `/competitions/${activeCompetition.id}/gallery`
-									: "#"
-							}
-							className="group cursor-pointer block"
-						>
-							<div className="relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-								<div className="aspect-[4/3] relative bg-gray-200">
-									<img
-										src="https://placehold.co/400x300/e5e7eb/9ca3af?text=Photo+Contest"
-										alt="Contest"
-										className="w-full h-full object-cover"
-									/>
-									<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-									<div className="absolute bottom-4 left-4 right-4 z-10">
-										<h3 className="text-white text-2xl font-bold mb-2 drop-shadow-lg">
-											Photo Contest
-										</h3>
-										<p className="text-white text-sm opacity-90 drop-shadow-md">
-											Explore amazing photography
-										</p>
-									</div>
-								</div>
-							</div>
-						</Link>
-					</div>
-				)}
-			</div>
-
-			{/* Featured Gallery Section */}
-			{recentPhotos.length > 0 && (
-				<div className="bg-gray-50 py-16">
-					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-						<div className="text-center mb-12">
-							<h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-								Recent Submissions
-							</h2>
-							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
-								Discover the latest approved submissions from our current
-								competition. Click any photo to view it in full detail.
-							</p>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div className="text-center">
+						<div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+							<PlusCircle className="h-8 w-8 text-blue-600" />
 						</div>
-
-						{photosLoading ? (
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-								{Array.from({ length: 6 }).map((_, i) => (
-									<div
-										// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-										key={i}
-										className="animate-pulse bg-gray-200 rounded-lg aspect-square"
-									/>
-								))}
-							</div>
-						) : (
-							<>
-								<PhotoGrid
-									photos={recentPhotosWithVotes}
-									layout="grid"
-									showMetadata={true}
-									onPhotoClick={handlePhotoClick}
-									columns={3}
-									aspectRatio="square"
-									gap="md"
-									className="mb-8"
-								/>
-								{activeCompetition && (
-									<div className="text-center">
-										<Link
-											to={`/competitions/${activeCompetition.id}/gallery`}
-											className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors color-white"
-										>
-											<span className="text-white">View All Photos</span>
-											<ArrowRight className="h-4 w-4" />
-										</Link>
-									</div>
-								)}
-							</>
-						)}
+						<h3 className="text-xl font-semibold mb-2">Easy to Use</h3>
+						<p className="text-gray-600">
+							Add new tasks with just a few clicks. Our intuitive interface
+							makes task management effortless.
+						</p>
+					</div>
+					<div className="text-center">
+						<div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+							<CheckSquare className="h-8 w-8 text-green-600" />
+						</div>
+						<h3 className="text-xl font-semibold mb-2">Track Progress</h3>
+						<p className="text-gray-600">
+							Mark tasks as complete and see your progress. Stay motivated as
+							you accomplish your goals.
+						</p>
+					</div>
+					<div className="text-center">
+						<div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+							<Users className="h-8 w-8 text-purple-600" />
+						</div>
+						<h3 className="text-xl font-semibold mb-2">User Accounts</h3>
+						<p className="text-gray-600">
+							Create your personal account to save and access your todos from
+							anywhere.
+						</p>
 					</div>
 				</div>
-			)}
+			</div>
 
 			{/* Call to Action Section */}
 			<div className="bg-gray-800 py-16">
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 					<h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-						Get Ready to Capture the Wild Beauty
+						Start Organizing Today
 					</h2>
 					<p className="text-lg text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-						Join us for the exciting wildlife photo contest as part of the 73rd
-						annual international conference of the Wildlife Disease Association.
-						It's your chance to showcase your talent and passion for wildlife
-						photography. Share your unique perspective and connect with fellow
-						enthusiasts for photography.
+						Join thousands of users who are already managing their tasks more
+						efficiently. Sign up for free and start organizing your life today.
 					</p>
 					<div className="flex flex-col sm:flex-row gap-4 justify-center">
 						<Link
 							to="/signup"
 							className="inline-flex items-center justify-center px-8 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
 						>
-							Register Now
+							Create Account
 						</Link>
 						<Link
 							to="/login"
 							className="inline-flex items-center justify-center px-8 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
 						>
-							Vote Now
+							Sign In
 						</Link>
 					</div>
 				</div>
 			</div>
-
-			{/* Lightbox */}
-			{recentPhotosWithVotes.length > 0 && (
-				<PhotoLightbox
-					photos={recentPhotosWithVotes}
-					currentIndex={lightboxIndex}
-					isOpen={lightboxOpen}
-					onClose={() => setLightboxOpen(false)}
-					onNavigate={setLightboxIndex}
-				/>
-			)}
 		</PublicLayout>
 	);
 }

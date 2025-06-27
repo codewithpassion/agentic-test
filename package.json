@@ -1,5 +1,5 @@
 {
-	"name": "react-router-cloudflare-boilerplate",
+	"name": "todo-app",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -20,7 +20,7 @@
 		"db:apply": "wrangler d1 migrations apply app-db",
 		"db:gen": "drizzle-kit generate",
 		"db:update": "drizzle-kit generate && wrangler d1 migrations apply app-db --local",
-		"db:deploy:prod": "drizzle-kit generate && wrangler d1 migrations apply wda-2025-photo-comp-prod-db --remote --env production",
+		"db:deploy:prod": "drizzle-kit generate && wrangler d1 migrations apply todo-app-prod-db --remote --env production",
 		"prepare": "husky"
 	},
 	"dependencies": {

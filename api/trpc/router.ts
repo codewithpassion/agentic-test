@@ -103,11 +103,8 @@ export const superAdminProcedure = protectedProcedure.use(
 );
 
 // Permission-specific procedures
-export const moderatorProcedure = protectedProcedure.use(
-	permissionMiddleware("moderate_content"),
-);
-export const competitionManagerProcedure = protectedProcedure.use(
-	permissionMiddleware("manage_competitions"),
+export const todoManagerProcedure = protectedProcedure.use(
+	permissionMiddleware("manage_todos"),
 );
 
 // Ownership middleware factory

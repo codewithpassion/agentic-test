@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Outlet } from "react-router";
 import { Navigate } from "react-router";
 import { useAuth } from "~/hooks/use-auth";
-import { AdminBreadcrumbs } from "./admin-breadcrumbs";
 import { AdminHeader } from "./admin-header";
 import { AdminSidebar } from "./admin-sidebar";
 
@@ -27,9 +26,6 @@ export function AdminLayout() {
 			<div className="flex-1 flex flex-col overflow-hidden">
 				{/* Header */}
 				<AdminHeader onMenuClick={() => setSidebarOpen(true)} />
-
-				{/* Breadcrumbs */}
-				<AdminBreadcrumbs />
 
 				{/* Main content */}
 				<main className="flex-1 overflow-y-auto bg-white">

@@ -118,8 +118,7 @@ export function RoleManager() {
 						<div className="bg-blue-50 border border-blue-200 rounded-md p-4">
 							<h4 className="font-medium text-blue-900 mb-2">👤 User Role</h4>
 							<p className="text-blue-800 text-sm">
-								Default role for all registered users. Can submit photos, vote,
-								and manage their own submissions.
+								Default role for all registered users.
 							</p>
 						</div>
 

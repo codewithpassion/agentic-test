@@ -5,22 +5,8 @@
 		{
 			"idx": 0,
 			"version": "6",
-			"when": 1744672614001,
-			"tag": "0000_high_hedge_knight",
-			"breakpoints": true
-		},
-		{
-			"idx": 1,
-			"version": "6",
-			"when": 1749707483660,
-			"tag": "0001_futuristic_payback",
-			"breakpoints": true
-		},
-		{
-			"idx": 2,
-			"version": "6",
-			"when": 1750047455310,
-			"tag": "0002_living_lucky_pierre",
+			"when": 1750989057528,
+			"tag": "0000_typical_titania",
 			"breakpoints": true
 		}
 	]

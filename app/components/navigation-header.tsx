@@ -10,25 +10,9 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useAuth } from "~/hooks/use-auth";
-import { trpc } from "~/lib/trpc";
 
 export function NavigationHeader() {
 	const { user } = useAuth();
-
-	// Fetch active competitions
-	const { data: competitions = [] } = trpc.competitions.list.useQuery({
-		status: "active",
-		limit: 1,
-	});
-
-	// Get the first active competition
-	const activeCompetition = competitions[0];
-
-	// Get categories for the active competition
-	const { data: categories = [] } = trpc.categories.listByCompetition.useQuery(
-		{ competitionId: activeCompetition?.id || "" },
-		{ enabled: !!activeCompetition?.id },
-	);
 
 	const getInitials = (name?: string) => {
 		if (!name) return "U";
@@ -44,43 +28,17 @@ export function NavigationHeader() {
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex justify-between items-center h-16">
 					<div className="flex items-center space-x-8">
-						<div className="text-xl font-bold text-gray-900">
-							2025 Wildlife Photo Contest
-						</div>
+						<div className="text-xl font-bold text-gray-900">Todo App</div>
 						<div className="hidden md:flex space-x-6 text-sm">
 							<Link to="/" className="text-gray-900 hover:text-gray-600">
 								Home
 							</Link>
-							<Link to="/about" className="text-gray-900 hover:text-gray-600">
-								About
-							</Link>
-							{categories.map((category) => (
-								<Link
-									key={category.id}
-									to={
-										activeCompetition
-											? `/competitions/${activeCompetition.id}/gallery/${category.id}`
-											: "#"
-									}
-									className="text-gray-900 hover:text-gray-600"
-								>
-									{category.name}
-								</Link>
-							))}
-							<Link to="/contact" className="text-gray-900 hover:text-gray-600">
-								Contact
+							<Link to="/todos" className="text-gray-900 hover:text-gray-600">
+								Todos
 							</Link>
 						</div>
 					</div>
 					<div className="flex items-center space-x-4">
-						{/* Social icons */}
-						{/* <div className="hidden sm:flex items-center space-x-2 text-gray-600">
-							<span>📧</span>
-							<span>🐦</span>
-							<span>📷</span>
-						</div> */}
-
-						{/* User menu or Sign in button */}
 						{user ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
@@ -104,14 +62,6 @@ export function NavigationHeader() {
 									</div>
 									<DropdownMenuSeparator />
 
-									<DropdownMenuItem asChild>
-										<Link to="/my-submissions">
-											<User className="h-4 w-4 mr-2" />
-											My Submissions
-										</Link>
-									</DropdownMenuItem>
-
-									{/* Show admin link if user is admin or superadmin */}
 									{user.roles &&
 										(user.roles.includes("admin") ||
 											user.roles.includes("superadmin")) && (

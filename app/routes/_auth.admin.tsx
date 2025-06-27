@@ -6,10 +6,10 @@ export default function AdminLayoutRoute() {
 
 export function meta() {
 	return [
-		{ title: "Admin Dashboard - WDA Photo Competition" },
+		{ title: "Admin Dashboard - Todo App" },
 		{
 			name: "description",
-			content: "Administrative dashboard for managing photo competitions",
+			content: "Administrative dashboard for managing the todo application",
 		},
 	];
 }

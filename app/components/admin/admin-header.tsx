@@ -60,7 +60,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 							Admin Dashboard
 						</h1>
 						<p className="text-sm text-gray-500">
-							Wildlife Disease Association Photo Competition
+							Manage your todo application
 						</p>
 					</div>
 				</div>
