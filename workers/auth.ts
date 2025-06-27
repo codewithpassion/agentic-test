@@ -98,7 +98,7 @@ export async function authFactory(env: AppType["Bindings"], request: Request) {
 								messageId: result.messageId,
 							});
 						},
-						expiresIn: 60 * 15, // 5 minutes
+						expiresIn: 60 * 15, // 15 minutes
 						disableSignUp: true, // Disable sign up if user is not found
 					}),
 				],

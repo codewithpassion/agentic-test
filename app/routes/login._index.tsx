@@ -1,6 +1,6 @@
 import { Mail } from "lucide-react";
-import { useContext, useState } from "react";
-import { Link, Outlet, useNavigate } from "react-router";
+import { useContext, useEffect, useState } from "react";
+import { Link, Outlet, useNavigate, useSearchParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -16,13 +16,29 @@ import { signIn } from "~~/auth-client";
 
 export default function Login() {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
 	const [result, setResult] = useState<
 		{ error: string; status: number } | undefined
 	>(undefined);
 
+	useEffect(() => {
+		const error = searchParams.get("error");
+		if (error === "verification_failed") {
+			setResult({
+				error: "The magic link is invalid or has expired. Please try again.",
+				status: 401,
+			});
+		} else if (error) {
+			setResult({ error: error, status: 401 });
+		}
+	}, [searchParams]);
+
 	const submit = async ({ email }: { email: string }) => {
 		signIn.magicLink(
-			{ email, callbackURL: `${window.location.origin}/` },
+			{
+				email,
+				callbackURL: "/todos",
+			},
 			{
 				onSuccess: () => {
 					console.log("Success");

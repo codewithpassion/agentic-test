@@ -8,6 +8,8 @@ export class DashboardService {
 	async getOverview() {
 		const startOfDay = new Date();
 		startOfDay.setHours(0, 0, 0, 0);
+		// Convert to Unix timestamp (seconds) for D1/SQLite
+		const startOfDayTimestamp = Math.floor(startOfDay.getTime() / 1000);
 
 		// Get user stats
 		const userStats = await this.db
@@ -33,10 +35,10 @@ export class DashboardService {
 		const todayStats = await this.db
 			.select({
 				newTodos: count(
-					sql`CASE WHEN ${todos.createdAt} >= ${startOfDay} THEN 1 END`,
+					sql`CASE WHEN ${todos.createdAt} >= ${startOfDayTimestamp} THEN 1 END`,
 				),
 				completedTodos: count(
-					sql`CASE WHEN ${todos.completed} = 1 AND ${todos.createdAt} >= ${startOfDay} THEN 1 END`,
+					sql`CASE WHEN ${todos.completed} = 1 AND ${todos.createdAt} >= ${startOfDayTimestamp} THEN 1 END`,
 				),
 			})
 			.from(todos)

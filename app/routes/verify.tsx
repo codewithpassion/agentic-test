@@ -30,7 +30,7 @@ export default function VerifyPage() {
 					<CardContent className="space-y-4">
 						<p className="text-sm text-center text-gray-600">
 							Click the link in the email to complete your sign in. The link
-							will expire in 10 minutes.
+							will expire in 15 minutes.
 						</p>
 
 						<div className="text-center">

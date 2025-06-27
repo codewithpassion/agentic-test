@@ -38,12 +38,27 @@ export class ResendEmailService implements EmailService {
 		userAgent?: string;
 	}): Promise<{ success: boolean; messageId?: string; error?: string }> {
 		try {
+			// Parse the magic link URL to extract the token
+			const url = new URL(params.magicLink);
+			const token = url.searchParams.get("token");
+
+			// Create the confirmation page URL with just the token
+			const confirmationUrl = new URL(url.origin);
+			confirmationUrl.pathname = "/auth/magic-link/confirm";
+			confirmationUrl.searchParams.set("token", token || "");
+
+			// Use the confirmation URL in the email
+			const emailParams = {
+				...params,
+				magicLink: confirmationUrl.toString(),
+			};
+
 			const { data, error } = await this.resend.emails.send({
 				from: `${this.fromName} <${this.fromEmail}>`,
 				to: [params.email],
 				subject: "Sign in to your account",
-				html: this.generateEmailTemplate(params),
-				text: this.generateTextTemplate(params),
+				html: this.generateEmailTemplate(emailParams),
+				text: this.generateTextTemplate(emailParams),
 				headers: {
 					"X-Entity-Ref-ID": `magic-link-${Date.now()}`,
 				},
@@ -93,16 +108,23 @@ export class ResendEmailService implements EmailService {
   
   <p>Hello,</p>
   
-  <p>You requested to sign in to your account. Click the button below to securely access your account:</p>
+  <p>You requested to sign in to your account. For your security, we use a two-step verification process.</p>
+  
+  <p><strong>Step 1:</strong> Click the button below to open the confirmation page<br>
+  <strong>Step 2:</strong> Confirm your sign-in on the secure page</p>
   
   <div style="text-align: center; margin: 30px 0;">
     <a href="${params.magicLink}" 
        style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
-      Sign In Securely
+      Continue to Sign In
     </a>
   </div>
   
-  <p><strong>Important:</strong> This link will expire in 10 minutes and can only be used once.</p>
+  <p style="background-color: #f3f4f6; padding: 12px; border-radius: 6px; font-size: 14px;">
+    <strong>Why two steps?</strong> This prevents automated systems from accidentally using your sign-in link when scanning emails for security threats.
+  </p>
+  
+  <p><strong>Important:</strong> This link will expire in 15 minutes and can only be used once.</p>
   
   <p>If you didn't request this sign-in, you can safely ignore this email.</p>
   
@@ -141,11 +163,16 @@ Sign in to your account
 
 Hello,
 
-You requested to sign in to your account. Use the link below to securely access your account:
+You requested to sign in to your account. For your security, we use a two-step verification process.
+
+Step 1: Click the link below to open the confirmation page
+Step 2: Confirm your sign-in on the secure page
 
 ${params.magicLink}
 
-Important: This link will expire in 10 minutes and can only be used once.
+Why two steps? This prevents automated systems from accidentally using your sign-in link when scanning emails for security threats.
+
+Important: This link will expire in 15 minutes and can only be used once.
 
 If you didn't request this sign-in, you can safely ignore this email.
 
@@ -160,10 +187,22 @@ export class MockEmailService implements EmailService {
 	async sendMagicLink(params: {
 		email: string;
 		magicLink: string;
+		ipAddress?: string;
+		userAgent?: string;
 	}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+		// Parse the magic link URL to extract the token
+		const url = new URL(params.magicLink);
+		const token = url.searchParams.get("token");
+
+		// Create the confirmation page URL with just the token
+		const confirmationUrl = new URL(url.origin);
+		confirmationUrl.pathname = "/auth/magic-link/confirm";
+		confirmationUrl.searchParams.set("token", token || "");
+
 		console.log("📧 [MOCK EMAIL] Magic Link Email:", {
 			to: params.email,
-			magicLink: params.magicLink,
+			magicLink: confirmationUrl.toString(),
+			originalLink: params.magicLink,
 			timestamp: new Date().toISOString(),
 		});
 
