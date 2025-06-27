@@ -5,7 +5,7 @@
 import { CheckSquare, PlusCircle, Users } from "lucide-react";
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link } from "react-router";
-import { PublicLayout } from "~/components/public-layout";
+import { PublicLayout } from "~/components/layouts/public-layout";
 import { useAuth } from "~/hooks/use-auth";
 
 export const meta: MetaFunction = () => {
@@ -103,15 +103,9 @@ export default function HomePage() {
 					</h2>
 					<p className="text-lg text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
 						Join thousands of users who are already managing their tasks more
-						efficiently. Sign up for free and start organizing your life today.
+						efficiently. Sign in and start organizing your life today.
 					</p>
-					<div className="flex flex-col sm:flex-row gap-4 justify-center">
-						<Link
-							to="/signup"
-							className="inline-flex items-center justify-center px-8 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
-						>
-							Create Account
-						</Link>
+					<div className="flex justify-center">
 						<Link
 							to="/login"
 							className="inline-flex items-center justify-center px-8 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
