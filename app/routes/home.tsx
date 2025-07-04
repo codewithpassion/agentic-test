@@ -1,4 +1,4 @@
-import { PublicLayout } from "~/components/public-layout";
+import { PublicLayout } from "~/components/layouts/public-layout";
 import { Welcome } from "../welcome/welcome";
 import type { Route } from "./+types/home";
 

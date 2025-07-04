@@ -8,7 +8,7 @@ import {
 	useLoaderData,
 	useNavigate,
 } from "react-router";
-import { PublicLayout } from "~/components/public-layout";
+import { PublicLayout } from "~/components/layouts/public-layout";
 import { Button } from "~/components/ui/button";
 import {
 	Card,

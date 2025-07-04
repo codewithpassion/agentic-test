@@ -77,7 +77,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 	return (
 		<aside
 			className={cn(
-				"fixed left-0 top-0 z-50 h-screen w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+				"fixed left-0 top-0 z-50 h-screen w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col",
 				isOpen ? "translate-x-0" : "-translate-x-full",
 			)}
 		>
@@ -148,7 +148,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 			</nav>
 
 			{/* Sidebar footer */}
-			<div className="p-4 border-t border-gray-200">
+			<div className="p-4 mt-auto border-t border-gray-200">
 				<div className="text-xs text-gray-500 text-center">
 					Todo App
 					<br />

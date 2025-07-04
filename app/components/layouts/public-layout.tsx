@@ -1,5 +1,5 @@
-import { Footer } from "~/components/footer";
-import { NavigationHeader } from "~/components/navigation-header";
+import { Footer } from "~/components/shared/footer";
+import { NavigationHeader } from "~/components/shared/navigation-header";
 
 interface PublicLayoutProps {
 	children: React.ReactNode;

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { Image } from "./ui/image";
+import { Image } from "~/components/ui/image";
 
 interface LayoutProps {
 	children: ReactNode;

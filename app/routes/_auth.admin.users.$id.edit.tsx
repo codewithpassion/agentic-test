@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { UserForm } from "~/components/admin/user-form";
+import { UserForm } from "~/components/features/admin/user-form";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
 import { useUser } from "~/hooks/use-user-management";
 

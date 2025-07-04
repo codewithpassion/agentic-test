@@ -3,7 +3,7 @@ import {
 	type AppLoadContext,
 	Outlet,
 } from "react-router";
-import { PublicLayout } from "~/components/public-layout";
+import { PublicLayout } from "~/components/layouts/public-layout";
 
 export async function action({
 	request,

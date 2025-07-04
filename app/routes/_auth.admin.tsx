@@ -1,6 +1,7 @@
-import { AdminLayout } from "~/components/admin/admin-layout";
+import { Outlet } from "react-router";
+import { AdminLayout } from "~/components/features/admin/admin-layout";
 
-export default function AdminLayoutRoute() {
+export default function AdminRoutes() {
 	return <AdminLayout />;
 }
 

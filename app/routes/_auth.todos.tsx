@@ -1,7 +1,7 @@
 import { CheckSquare, ListTodo } from "lucide-react";
 import type { MetaFunction } from "react-router";
-import { PublicLayout } from "~/components/public-layout";
-import { TodoList } from "~/components/todos/todo-list";
+import { TodoList } from "~/components/features/todos/todo-list";
+import { PublicLayout } from "~/components/layouts/public-layout";
 import {
 	Card,
 	CardContent,

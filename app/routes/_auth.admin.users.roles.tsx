@@ -1,4 +1,4 @@
-import { RoleManager } from "~/components/admin/role-manager";
+import { RoleManager } from "~/components/features/admin/role-manager";
 
 export default function AdminUserRolesPage() {
 	return (
