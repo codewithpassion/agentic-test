@@ -105,7 +105,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 								<Avatar className="h-8 w-8">
 									<AvatarImage src={user?.image || undefined} />
 									<AvatarFallback className="text-sm">
-										{getInitials(user?.name)}
+										{getInitials(user?.name ?? undefined)}
 									</AvatarFallback>
 								</Avatar>
 								<div className="text-left hidden md:block">

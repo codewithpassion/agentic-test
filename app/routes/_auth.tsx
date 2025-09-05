@@ -1,23 +1,13 @@
-import {
-	type AppLoadContext,
-	type LoaderFunctionArgs,
-	Outlet,
-	redirect,
-} from "react-router";
-import { authFactory } from "~~/auth";
+import { getAuth } from "@clerk/react-router/ssr.server";
+import { type LoaderFunctionArgs, Outlet, redirect } from "react-router";
 
 export async function loader(args: LoaderFunctionArgs) {
-	const c: AppLoadContext = args.context;
+	const { userId } = await getAuth(args);
 
-	const session = await (
-		await authFactory(c.cloudflare.env, args.request)
-	).api.getSession({
-		headers: args.request.headers,
-	});
-
-	if (!session || !session.user) {
+	if (!userId) {
 		return redirect("/login");
 	}
+
 	return null;
 }
 

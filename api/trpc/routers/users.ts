@@ -1,224 +1,31 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { z } from "zod";
-import { canAssignRole, canModifyUser } from "../../../workers/permissions";
-import { user } from "../../database/schema";
-import {
-	createUserSchema,
-	userRoleSchema,
-	userSearchSchema,
-	userUpdateSchema,
-} from "../../database/validations";
-import {
-	adminProcedure,
-	protectedProcedure,
-	router,
-	superAdminProcedure,
-} from "../router";
+import { adminProcedure, protectedProcedure, router } from "../router";
+
+// User type for admin list view - matches Clerk user structure
+export type AdminUserListItem = {
+	id: string;
+	email: string;
+	name: string;
+	image: string | null;
+	roles: "user" | "admin" | "superadmin"; // Single role for display
+	emailVerified: boolean;
+	createdAt: string; // ISO string
+};
+
+// Note: User management is handled via Clerk dashboard
+// These endpoints provide read-only access for admin UI
 
 export const usersRouter = router({
-	// Get paginated user list with search and filters (Admin+ only)
-	list: adminProcedure.input(userSearchSchema).query(async ({ ctx, input }) => {
-		const { db } = ctx;
-		const { search, role, limit, offset } = input;
-
-		// Build where conditions
-		const conditions = [];
-
-		// Search by name or email
-		if (search) {
-			conditions.push(
-				or(ilike(user.name, `%${search}%`), ilike(user.email, `%${search}%`)),
-			);
-		}
-
-		// Filter by role
-		if (role) {
-			conditions.push(eq(user.roles, role));
-		}
-
-		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-		// Get users with pagination
-		const users = await db
-			.select({
-				id: user.id,
-				name: user.name,
-				email: user.email,
-				roles: user.roles,
-				emailVerified: user.emailVerified,
-				image: user.image,
-				createdAt: user.createdAt,
-				updatedAt: user.updatedAt,
-			})
-			.from(user)
-			.where(whereClause)
-			.orderBy(desc(user.createdAt))
-			.limit(limit)
-			.offset(offset);
-
-		// Get total count for pagination
-		const [{ count }] = await db
-			.select({ count: sql<number>`count(*)` })
-			.from(user)
-			.where(whereClause);
-
-		return {
-			users,
-			totalCount: count,
-			hasMore: offset + limit < count,
-		};
-	}),
-
-	// Create new user (SuperAdmin only)
-	create: superAdminProcedure
-		.input(createUserSchema)
-		.mutation(async ({ ctx, input }) => {
-			const { db, user: currentUser } = ctx;
-
-			// Check if email already exists
-			const existingUser = await db
-				.select()
-				.from(user)
-				.where(eq(user.email, input.email))
-				.get();
-
-			if (existingUser) {
-				throw new TRPCError({
-					code: "CONFLICT",
-					message: "A user with this email already exists",
-				});
-			}
-
-			// Check if can assign this role
-			if (!canAssignRole(currentUser, input.roles)) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Cannot assign this role",
-				});
-			}
-
-			// Create the user
-			const newUser = {
-				id: crypto.randomUUID(),
-				name: input.name,
-				email: input.email,
-				roles: input.roles,
-				emailVerified: input.emailVerified,
-				image: null,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
-
-			const [createdUser] = await db.insert(user).values(newUser).returning();
-
-			return createdUser;
-		}),
-
-	// Get user by ID (Admin+ only)
-	getById: adminProcedure
-		.input(z.object({ id: z.string() }))
-		.query(async ({ ctx, input }) => {
-			const { db } = ctx;
-			const foundUser = await db
-				.select()
-				.from(user)
-				.where(eq(user.id, input.id))
-				.get();
-
-			if (!foundUser) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "User not found",
-				});
-			}
-
-			return foundUser;
-		}),
-
-	// Update user details (Admin+ only, role changes require SuperAdmin)
-	update: adminProcedure
-		.input(userUpdateSchema)
-		.mutation(async ({ ctx, input }) => {
-			const { db, user: currentUser } = ctx;
-			const { id, data } = input;
-
-			// Get the target user
-			const targetUser = await db
-				.select()
-				.from(user)
-				.where(eq(user.id, id))
-				.get();
-
-			if (!targetUser) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "User not found",
-				});
-			}
-
-			// Check if trying to modify role
-			if (data.roles && data.roles !== targetUser.roles) {
-				// Role changes require SuperAdmin
-				if (!canAssignRole(currentUser, data.roles)) {
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "SuperAdmin role required to change user roles",
-					});
-				}
-
-				// Check if can modify this specific user
-				if (!canModifyUser(currentUser, targetUser)) {
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "Cannot modify this user's role",
-					});
-				}
-			}
-
-			// Prevent users from modifying themselves
-			if (currentUser.id === id) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Cannot modify your own account",
-				});
-			}
-
-			// Build update object
-			const updateData: Partial<typeof data> & { updatedAt: Date } = {
-				updatedAt: new Date(),
-			};
-
-			if (data.name !== undefined) updateData.name = data.name;
-			if (data.email !== undefined) updateData.email = data.email;
-			if (data.roles !== undefined) updateData.roles = data.roles;
-			if (data.emailVerified !== undefined)
-				updateData.emailVerified = data.emailVerified;
-
-			const [updatedUser] = await db
-				.update(user)
-				.set(updateData)
-				.where(eq(user.id, id))
-				.returning();
-
-			return updatedUser;
-		}),
-
-	// Get user statistics
+	// Get user statistics (placeholder for Clerk integration)
 	getStats: adminProcedure.query(async ({ ctx }) => {
-		const { db } = ctx;
-
-		const stats = await db
-			.select({
-				totalUsers: sql<number>`count(*)`,
-				totalAdmins: sql<number>`sum(case when ${user.roles} = 'admin' then 1 else 0 end)`,
-				totalSuperAdmins: sql<number>`sum(case when ${user.roles} = 'superadmin' then 1 else 0 end)`,
-				verifiedUsers: sql<number>`sum(case when ${user.emailVerified} = 1 then 1 else 0 end)`,
-			})
-			.from(user)
-			.get();
-
-		return stats;
+		// In production, these would come from Clerk API
+		return {
+			totalUsers: 0,
+			totalAdmins: 0,
+			totalSuperAdmins: 0,
+			verifiedUsers: 0,
+		};
 	}),
 
 	// Get role hierarchy and permissions (Admin+ only)
@@ -266,57 +73,34 @@ export const usersRouter = router({
 		};
 	}),
 
-	// Assign role to user (SuperAdmin only)
-	assignRole: superAdminProcedure
+	// Placeholder for user list - would integrate with Clerk API
+	list: adminProcedure
 		.input(
 			z.object({
-				userId: z.string(),
-				role: userRoleSchema,
+				search: z.string().optional(),
+				role: z.enum(["user", "admin", "superadmin"]).optional(),
+				limit: z.number().min(1).max(100).default(10),
+				offset: z.number().min(0).default(0),
 			}),
 		)
-		.mutation(async ({ ctx, input }) => {
-			const { db, user: currentUser } = ctx;
-			const { userId, role } = input;
+		.query(
+			async ({
+				ctx,
+				input,
+			}): Promise<{
+				users: AdminUserListItem[];
+				totalCount: number;
+				hasMore: boolean;
+			}> => {
+				// In production, fetch from Clerk API
+				// For now, return empty array with proper type
+				const users: AdminUserListItem[] = [];
 
-			// Get target user
-			const targetUser = await db
-				.select()
-				.from(user)
-				.where(eq(user.id, userId))
-				.get();
-
-			if (!targetUser) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "User not found",
-				});
-			}
-
-			// Check if can assign this role
-			if (!canAssignRole(currentUser, role)) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Cannot assign this role",
-				});
-			}
-
-			// Check if can modify this user
-			if (!canModifyUser(currentUser, targetUser)) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Cannot modify this user",
-				});
-			}
-
-			const [updatedUser] = await db
-				.update(user)
-				.set({
-					roles: role,
-					updatedAt: new Date(),
-				})
-				.where(eq(user.id, userId))
-				.returning();
-
-			return updatedUser;
-		}),
+				return {
+					users,
+					totalCount: 0,
+					hasMore: false,
+				};
+			},
+		),
 });

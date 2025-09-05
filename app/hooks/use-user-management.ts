@@ -17,10 +17,6 @@ export function useUsers(options: UseUsersOptions = {}) {
 	});
 }
 
-export function useUser(id: string, enabled = true) {
-	return trpc.users.getById.useQuery({ id }, { enabled: enabled && !!id });
-}
-
 export function useUserStats() {
 	return trpc.users.getStats.useQuery();
 }
@@ -29,38 +25,50 @@ export function useRoleInfo() {
 	return trpc.users.getRoleInfo.useQuery();
 }
 
-export function useUpdateUser() {
-	const utils = trpc.useUtils();
+// Stubs for compatibility - actual user management happens in Clerk dashboard
+export function useUser(id: string, enabled = true) {
+	return {
+		data: null,
+		isLoading: false,
+		error: null,
+	};
+}
 
-	return trpc.users.update.useMutation({
-		onSuccess: () => {
-			// Invalidate user list and stats
-			utils.users.list.invalidate();
-			utils.users.getStats.invalidate();
+export function useUpdateUser() {
+	return {
+		mutate: () => {},
+		mutateAsync: async (data: unknown) => {
+			// Placeholder - actual user management happens in Clerk dashboard
+			throw new Error("User updates are managed through Clerk dashboard");
 		},
-	});
+		isLoading: false,
+		isPending: false,
+		error: null as { message: string } | null,
+	};
 }
 
 export function useAssignRole() {
-	const utils = trpc.useUtils();
-
-	return trpc.users.assignRole.useMutation({
-		onSuccess: () => {
-			// Invalidate user list and stats
-			utils.users.list.invalidate();
-			utils.users.getStats.invalidate();
+	return {
+		mutate: () => {},
+		mutateAsync: async (data: unknown) => {
+			// Placeholder - actual role assignment happens in Clerk dashboard
+			throw new Error("Role assignment is managed through Clerk dashboard");
 		},
-	});
+		isLoading: false,
+		isPending: false,
+		error: null as { message: string } | null,
+	};
 }
 
 export function useCreateUser() {
-	const utils = trpc.useUtils();
-
-	return trpc.users.create.useMutation({
-		onSuccess: () => {
-			// Invalidate user list and stats
-			utils.users.list.invalidate();
-			utils.users.getStats.invalidate();
+	return {
+		mutate: () => {},
+		mutateAsync: async (data: unknown) => {
+			// Placeholder - actual user creation happens in Clerk dashboard
+			throw new Error("User creation is managed through Clerk dashboard");
 		},
-	});
+		isLoading: false,
+		isPending: false,
+		error: null as { message: string } | null,
+	};
 }
