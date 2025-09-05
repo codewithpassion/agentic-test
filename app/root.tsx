@@ -1,14 +1,12 @@
+import { ClerkProvider } from "@clerk/react-router";
+import { rootAuthLoader } from "@clerk/react-router/ssr.server";
 import {
-	type AppLoadContext,
 	Links,
-	type LoaderFunctionArgs,
 	Meta,
 	Outlet,
 	Scripts,
 	ScrollRestoration,
-	data,
 	isRouteErrorResponse,
-	useLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -16,8 +14,6 @@ import "./tailwind.css";
 import { Toaster } from "~/components/ui/sonner";
 import { AuthProvider } from "~/contexts/auth-context";
 import { TRPCProvider } from "~/providers/trpc-provider";
-import { authFactory } from "~~/auth";
-import type { AuthUser } from "~~/types";
 
 export const links: Route.LinksFunction = () => [
 	{ rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -32,17 +28,9 @@ export const links: Route.LinksFunction = () => [
 	},
 ];
 
-export const loader = async (args: LoaderFunctionArgs) => {
-	const c: AppLoadContext = args.context;
-
-	const session = await (
-		await authFactory(c.cloudflare.env, args.request)
-	).api.getSession({
-		headers: args.request.headers,
-	});
-
-	return data({ session });
-};
+export async function loader(args: Route.LoaderArgs) {
+	return rootAuthLoader(args);
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
@@ -62,19 +50,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 	);
 }
 
-export default function App() {
-	const { session } = useLoaderData<typeof loader>();
-
-	// @ts-ignore
-	const user: AuthUser | undefined = session?.user || undefined;
-
+export default function App({ loaderData }: Route.ComponentProps) {
 	return (
-		<TRPCProvider>
-			<AuthProvider user={user}>
-				<Outlet />
-				<Toaster />
-			</AuthProvider>
-		</TRPCProvider>
+		<ClerkProvider loaderData={loaderData}>
+			<TRPCProvider>
+				<AuthProvider>
+					<Outlet />
+					<Toaster />
+				</AuthProvider>
+			</TRPCProvider>
+		</ClerkProvider>
 	);
 }
 

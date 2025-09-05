@@ -1,7 +1,7 @@
 import { TRPCError, initTRPC } from "@trpc/server";
 import superjson from "superjson";
-import type { Permission, UserRole } from "~/types/auth";
 import { hasPermission, hasRole, isAdmin } from "../../workers/permissions";
+import type { Permission, UserRole } from "../../workers/types";
 import type { Context } from "./context";
 
 const t = initTRPC.context<Context>().create({

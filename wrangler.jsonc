@@ -25,12 +25,6 @@
 			"database_id": "2060fb8d-100e-4ec5-8767-6992147757e5"
 		}
 	],
-	"kv_namespaces": [
-		{
-			"binding": "SESSIONS",
-			"id": "c2f40294d32e4a7f80fa41d36a9a8754"
-		}
-	],
 	/**
 	 * Environment-specific configurations
 	 */
@@ -45,12 +39,6 @@
 					"binding": "DB",
 					"database_name": "app-db-staging",
 					"database_id": "YOUR_STAGING_DB_ID"
-				}
-			],
-			"kv_namespaces": [
-				{
-					"binding": "SESSIONS",
-					"id": "YOUR_STAGING_KV_ID"
 				}
 			]
 		},
@@ -67,12 +55,6 @@
 					"binding": "DB",
 					"database_name": "todo-app-prod-db",
 					"database_id": "beaacf56-b691-4aa5-be2c-7f8033dc62e2"
-				}
-			],
-			"kv_namespaces": [
-				{
-					"binding": "SESSIONS",
-					"id": "d76197df2c6b46f799e3a5b21acdccd8"
 				}
 			]
 		}

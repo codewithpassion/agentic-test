@@ -1,6 +1,2 @@
-// Re-export types from workers for frontend use
-export type {
-	AuthUser,
-	Permission,
-	UserRole,
-} from "../../workers/types";
+// Re-export types from auth context
+export type { UserRole, Permission } from "~/contexts/auth-context";

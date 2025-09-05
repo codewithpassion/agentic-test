@@ -1,6 +1,6 @@
 import { count, eq, gte, sql } from "drizzle-orm";
 import type { Database } from "../../api/database/db";
-import { todos, user } from "../../api/database/schema";
+import { todos, users } from "../../api/database/schema";
 
 export class DashboardService {
 	constructor(private db: Database) {}
@@ -14,12 +14,9 @@ export class DashboardService {
 		// Get user stats
 		const userStats = await this.db
 			.select({
-				total: count(user.id),
-				admins: count(
-					sql`CASE WHEN ${user.roles} IN ('admin', 'superadmin') THEN 1 END`,
-				),
+				total: count(users.id),
 			})
-			.from(user)
+			.from(users)
 			.get();
 
 		// Get todo stats
@@ -47,7 +44,7 @@ export class DashboardService {
 		return {
 			users: {
 				total: userStats?.total || 0,
-				admins: userStats?.admins || 0,
+				admins: 0, // Admins are managed in Clerk
 			},
 			todos: {
 				total: todoStats?.total || 0,

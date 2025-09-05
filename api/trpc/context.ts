@@ -1,11 +1,10 @@
+import type { UserResource } from "@clerk/types";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import type { AuthUser } from "~/types/auth";
-import { getAuthUser } from "../../workers/auth-utils";
 import { createDb } from "../database/db";
 
 export interface Context {
 	db: ReturnType<typeof createDb>;
-	user: AuthUser | null;
+	user: UserResource | null; // Clerk user from request
 	request: Request;
 	env: CloudflareBindings;
 }
@@ -17,7 +16,9 @@ export async function createContext({
 	env: CloudflareBindings;
 }): Promise<Context> {
 	const db = createDb(env.DB);
-	const user = await getAuthUser(req);
+
+	// TODO: Extract Clerk user from request using Clerk's server-side SDK
+	const user = null;
 
 	return {
 		db,

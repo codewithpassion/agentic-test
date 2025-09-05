@@ -1,10 +1,9 @@
-import { randomBytes } from "crypto";
-
 /**
  * Generate a unique ID
  */
 export function generateId(): string {
-	return randomBytes(16).toString("hex");
+	// Use crypto.randomUUID() which is available in Cloudflare Workers
+	return crypto.randomUUID();
 }
 
 /**
@@ -12,7 +11,7 @@ export function generateId(): string {
  */
 export function generateSecureFilename(originalFilename: string): string {
 	const timestamp = Date.now();
-	const randomPart = randomBytes(8).toString("hex");
+	const randomPart = crypto.randomUUID().split("-")[0];
 	const extension = originalFilename.split(".").pop();
 	return `${timestamp}-${randomPart}.${extension}`;
 }

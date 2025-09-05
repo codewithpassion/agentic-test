@@ -1,13 +1,13 @@
-import { SignIn } from "@clerk/react-router";
+import { SignUp } from "@clerk/react-router";
 
-export default function LoginPage() {
+export default function SignUpPage() {
 	return (
 		<div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-			<SignIn
+			<SignUp
 				routing="path"
-				path="/login"
-				signUpUrl="/sign-up"
-				afterSignInUrl="/todos"
+				path="/sign-up"
+				signInUrl="/login"
+				afterSignUpUrl="/todos"
 				appearance={{
 					elements: {
 						card: "shadow-none",

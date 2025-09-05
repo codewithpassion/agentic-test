@@ -45,13 +45,12 @@ wrangler secret put VARIABLE_NAME # Add production secrets
 - `/app` - Frontend React code (routes, components, hooks)
 - `/api` - Backend API code (tRPC routers, services, database)
 - `/workers` - Cloudflare Workers entry points
-- `/packages/better-auth` - Authentication package configuration
 
 ### Key Technologies
 - **Frontend**: React 19, React Router 7, TypeScript, TailwindCSS, ShadCN UI
 - **Backend**: Cloudflare Workers, Hono, tRPC, Drizzle ORM
-- **Database**: Cloudflare D1 (SQLite), KV Storage
-- **Auth**: Better-auth with magic link authentication
+- **Database**: Cloudflare D1 (SQLite)
+- **Auth**: Clerk authentication (external service)
 - **Tooling**: Bun, Biome, Wrangler
 
 ### Path Aliases
@@ -95,14 +94,14 @@ wrangler secret put VARIABLE_NAME # Add production secrets
 
 ### User Roles
 - `user` - Default role for all users
-- `admin` - Administrative access
+- `admin` - Administrative access  
 - `superadmin` - Full system access
 
-### Magic Link Flow
-1. User requests magic link → Email sent with confirmation URL
-2. User clicks link → Goes to `/auth/magic-link/confirm`
-3. User confirms → Token consumed at `/auth/magic-link/verify`
-4. Success → Redirected to `/todos`
+### Clerk Authentication
+- Authentication is handled by Clerk (external service)
+- User roles stored in Clerk's publicMetadata
+- Sign in/up via Clerk's prebuilt components
+- Session management handled by Clerk
 
 ### Protected Routes
 - Routes under `_auth.*` require authentication
@@ -123,8 +122,8 @@ After modifying environment variables:
 3. Types appear in `worker-configuration.d.ts` (auto-generated)
 
 ### Required Secrets
-- `BETTER_AUTH_SECRET` - Authentication secret key
-- `RESEND_API_KEY` - Email service API key (optional in dev)
+- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk publishable key (client-side)
+- `CLERK_SECRET_KEY` - Clerk secret key (server-side)
 
 ## Component Development
 

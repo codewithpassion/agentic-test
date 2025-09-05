@@ -5,9 +5,9 @@ A modern, production-ready template for building full-stack React applications u
 ## Features
 
 - 🚀 Server-side rendering
-- 🗄️ Cloudflare D1 and KV data storage using drizzle
+- 🗄️ Cloudflare D1 data storage using drizzle
 - 🪟 ShadCN components
-- 🔑 Authentication with `better-auth`
+- 🔑 Authentication with Clerk
 - ⚡️ Hot Module Replacement (HMR)
 - 📦 Asset bundling and optimization
 - 🔄 Data loading and mutations

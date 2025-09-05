@@ -2,9 +2,7 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 /// <reference path="../worker-configuration.d.ts" />
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { cloudflareContextMiddleware } from "packages/better-auth";
 import { type AppLoadContext, createRequestHandler } from "react-router";
-import { authFactory } from "~~/auth";
 import { appRouter } from "../api/trpc";
 import { createContext } from "../api/trpc/context";
 import { D1DbMiddleware } from "./middleware";
@@ -28,7 +26,6 @@ const requestHandler = createRequestHandler(
 
 const app = new Hono<AppType>();
 
-app.use(cloudflareContextMiddleware);
 app.use(D1DbMiddleware);
 
 // CORS configuration for API routes
@@ -71,11 +68,6 @@ app.all("/api/trpc/*", async (c) => {
 			console.error(`tRPC Error on path '${path}':`, error);
 		},
 	});
-});
-
-// Authentication routes
-app.on(["POST", "GET"], "/api/auth/*", async (c) => {
-	return (await authFactory(c.env, c.req.raw)).handler(c.req.raw);
 });
 
 app.use(async (c) => {

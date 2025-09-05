@@ -1,13 +1,9 @@
 /// <reference path="../worker-configuration.d.ts" />
-import type { AuthCloudflareBindings } from "@portcityai/better-auth";
-import type { authSchema } from "@portcityai/better-auth";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 
 declare global {
 	interface CloudflareEnvironment extends CloudflareBindings {}
-	interface CloudflareVariables extends DatabaseVariables {
-		loginService: AuthCloudflareBindings;
-	}
+	interface CloudflareVariables extends DatabaseVariables {}
 }
 
 export type DatabaseVariables = {
@@ -25,16 +21,7 @@ export type AppType = {
 	Variables: CloudflareVariables;
 };
 
-export type User = typeof authSchema.user.$inferSelect;
-export type Session = typeof authSchema.session.$inferSelect;
-
 export type UserRole = "user" | "admin" | "superadmin";
-
-export interface AuthUser extends User {}
-
-export interface AuthSession extends Session {
-	user: AuthUser;
-}
 
 export type CloudflareBindings = globalThis.CloudflareBindings;
 

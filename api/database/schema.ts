@@ -2,15 +2,26 @@ import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-// Import the user table from better-auth schema
-import { user } from "../../packages/better-auth/db/auth-schema";
+// Users table - simplified for Clerk integration
+// This stores minimal user data, with Clerk handling auth
+export const users = sqliteTable("users", {
+	id: text("id").primaryKey(), // Will use Clerk user ID
+	email: text("email").notNull().unique(),
+	name: text("name"),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
 
 // Todos table
 export const todos = sqliteTable("todos", {
 	id: text("id").primaryKey(),
 	userId: text("user_id")
 		.notNull()
-		.references(() => user.id, { onDelete: "cascade" }),
+		.references(() => users.id, { onDelete: "cascade" }),
 	text: text("text").notNull(),
 	completed: integer("completed", { mode: "boolean" }).notNull().default(false),
 	createdAt: integer("created_at", { mode: "timestamp" })
@@ -20,22 +31,19 @@ export const todos = sqliteTable("todos", {
 
 // Relations
 export const todosRelations = relations(todos, ({ one }) => ({
-	user: one(user, {
+	user: one(users, {
 		fields: [todos.userId],
-		references: [user.id],
+		references: [users.id],
 	}),
 }));
 
 // User relations
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(users, ({ many }) => ({
 	todos: many(todos),
 }));
 
-// Re-export user table and types
-export { user };
-export type User = typeof user.$inferSelect;
-export type NewUser = typeof user.$inferInsert;
-
 // Type exports
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type Todo = typeof todos.$inferSelect;
 export type NewTodo = typeof todos.$inferInsert;
