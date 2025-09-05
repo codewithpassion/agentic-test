@@ -1,12 +1,21 @@
-import { trpc } from "~/lib/trpc";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function useDashboard() {
 	return {
-		// Dashboard overview with auto-refresh
-		useOverview: () =>
-			trpc.dashboard.getOverview.useQuery(undefined, {
-				refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
-				staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
-			}),
+		// Dashboard overview - Convex automatically handles real-time updates
+		useOverview: () => {
+			const stats = useQuery(api.users.getAdminStats);
+			return {
+				data: stats || undefined,
+				isLoading: stats === undefined,
+				error: null as { message: string } | null, // Properly typed error for compatibility
+				refetch: () => {
+					// Convex queries are reactive and refetch automatically
+					// This is a no-op for compatibility with the component
+				},
+				isRefetching: false, // Convex doesn't expose refetching state
+			};
+		},
 	};
 }

@@ -13,7 +13,7 @@ import type { Route } from "./+types/root";
 import "./tailwind.css";
 import { Toaster } from "~/components/ui/sonner";
 import { AuthProvider } from "~/contexts/auth-context";
-import { TRPCProvider } from "~/providers/trpc-provider";
+import { ConvexClientProvider } from "~/lib/convex";
 
 export const links: Route.LinksFunction = () => [
 	{ rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -29,7 +29,6 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader(args: Route.LoaderArgs) {
-	console.log("CLerk Key", args.context.cloudflare.env.CLERK_SECRET_KEY);
 	return rootAuthLoader(
 		args,
 		({ request, context, params }) => {
@@ -65,12 +64,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App({ loaderData }: Route.ComponentProps) {
 	return (
 		<ClerkProvider loaderData={loaderData}>
-			<TRPCProvider>
+			<ConvexClientProvider>
 				<AuthProvider>
 					<Outlet />
 					<Toaster />
 				</AuthProvider>
-			</TRPCProvider>
+			</ConvexClientProvider>
 		</ClerkProvider>
 	);
 }

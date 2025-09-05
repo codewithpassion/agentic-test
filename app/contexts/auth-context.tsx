@@ -1,9 +1,11 @@
 import { useAuth as useClerkAuth, useUser } from "@clerk/react-router";
 import type { UserResource } from "@clerk/types";
 import { createContext, useContext } from "react";
+import { useClerkConvexSync } from "~/hooks/use-clerk-convex-sync";
+import { PermissionChecker, rolesHavePermission } from "~/lib/permissions";
+import type { Permission } from "~/lib/permissions";
 
 export type UserRole = "user" | "admin" | "superadmin";
-export type Permission = string;
 
 export interface AuthContextValue {
 	user: {
@@ -22,6 +24,7 @@ export interface AuthContextValue {
 	hasRole: (role: UserRole) => boolean;
 	isAdmin: () => boolean;
 	isSuperAdmin: () => boolean;
+	permissionChecker: PermissionChecker | null;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,6 +32,9 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
 	const { isLoaded: isAuthLoaded } = useClerkAuth();
+
+	// Sync Clerk user to Convex database
+	useClerkConvexSync();
 
 	const isPending = !isUserLoaded || !isAuthLoaded;
 	const isAuthenticated = isSignedIn ?? false;
@@ -41,13 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	const hasPermission = (permission: Permission) => {
-		// Implement permission logic based on roles
-		// For now, admins and superadmins have all permissions
-		return hasRole("admin") || hasRole("superadmin");
+		// Use the granular permission system
+		return rolesHavePermission(userRoles, permission);
 	};
 
 	const isAdmin = () => hasRole("admin") || hasRole("superadmin");
 	const isSuperAdmin = () => hasRole("superadmin");
+
+	// Create a permission checker instance for advanced permission operations
+	const permissionChecker = isAuthenticated
+		? new PermissionChecker(userRoles)
+		: null;
 
 	const value: AuthContextValue = {
 		user: user
@@ -68,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		hasRole,
 		isAdmin,
 		isSuperAdmin,
+		permissionChecker,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,23 +1,25 @@
+import { useMutation } from "convex/react";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { trpc } from "~/lib/trpc";
+import { api } from "../../../../convex/_generated/api";
 
 export const AddTodoForm = () => {
 	const [text, setText] = useState("");
-	const utils = trpc.useContext();
-	const createTodo = trpc.todos.create.useMutation({
-		onSuccess: () => {
-			utils.todos.list.invalidate();
-			setText("");
-		},
-	});
+	const [isCreating, setIsCreating] = useState(false);
+	const createTodo = useMutation(api.todos.create);
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (text.trim()) {
-			createTodo.mutate({ text: text.trim() });
+			setIsCreating(true);
+			try {
+				await createTodo({ text: text.trim() });
+				setText("");
+			} finally {
+				setIsCreating(false);
+			}
 		}
 	};
 
@@ -28,12 +30,12 @@ export const AddTodoForm = () => {
 				value={text}
 				onChange={(e) => setText(e.target.value)}
 				placeholder="Add a new task..."
-				disabled={createTodo.isPending}
+				disabled={isCreating}
 				className="flex-1"
 			/>
 			<Button
 				type="submit"
-				disabled={!text.trim() || createTodo.isPending}
+				disabled={!text.trim() || isCreating}
 				className="gap-2"
 			>
 				<Plus className="h-4 w-4" />

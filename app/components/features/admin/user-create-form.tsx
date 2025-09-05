@@ -67,7 +67,9 @@ export function UserCreateForm() {
 	};
 
 	const getRoleDescription = (role: UserRole) => {
-		const roleData = roleInfo?.roles.find((r) => r.name === role);
+		const roleData = roleInfo?.roles.find(
+			(r: { name: UserRole; description: string }) => r.name === role,
+		);
 		return roleData?.description || "";
 	};
 

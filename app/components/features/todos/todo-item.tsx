@@ -1,31 +1,42 @@
+import { useMutation } from "convex/react";
 import { Trash2 } from "lucide-react";
-import type { Todo } from "~/../../api/database/schema";
+import React from "react";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
-import { trpc } from "~/lib/trpc";
 import { cn } from "~/lib/utils";
+import { api } from "../../../../convex/_generated/api";
+import type { Doc } from "../../../../convex/_generated/dataModel";
 
-export const TodoItem = ({ todo }: { todo: Todo }) => {
-	const utils = trpc.useContext();
-	const updateTodo = trpc.todos.update.useMutation({
-		onSuccess: () => {
-			utils.todos.list.invalidate();
-		},
-	});
-	const deleteTodo = trpc.todos.delete.useMutation({
-		onSuccess: () => {
-			utils.todos.list.invalidate();
-		},
-	});
+export const TodoItem = ({ todo }: { todo: Doc<"todos"> }) => {
+	const updateTodo = useMutation(api.todos.update);
+	const deleteTodo = useMutation(api.todos.remove);
+	const [isUpdating, setIsUpdating] = React.useState(false);
+	const [isDeleting, setIsDeleting] = React.useState(false);
+
+	const handleUpdate = async (completed: boolean) => {
+		setIsUpdating(true);
+		try {
+			await updateTodo({ id: todo._id, completed });
+		} finally {
+			setIsUpdating(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		setIsDeleting(true);
+		try {
+			await deleteTodo({ id: todo._id });
+		} finally {
+			setIsDeleting(false);
+		}
+	};
 
 	return (
 		<div className="group flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
 			<Checkbox
 				checked={todo.completed}
-				onCheckedChange={(checked) =>
-					updateTodo.mutate({ id: todo.id, completed: !!checked })
-				}
-				disabled={updateTodo.isPending}
+				onCheckedChange={(checked) => handleUpdate(!!checked)}
+				disabled={isUpdating}
 				className="h-5 w-5"
 			/>
 			<span
@@ -40,8 +51,8 @@ export const TodoItem = ({ todo }: { todo: Todo }) => {
 				type="button"
 				variant="ghost"
 				size="sm"
-				onClick={() => deleteTodo.mutate({ id: todo.id })}
-				disabled={deleteTodo.isPending}
+				onClick={handleDelete}
+				disabled={isDeleting}
 				className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
 			>
 				<Trash2 className="h-4 w-4" />

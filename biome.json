@@ -12,7 +12,8 @@
 			"app/components/ui/**/*",
 			"worker-configuration.d.ts",
 			".react-router/types/+register.ts",
-			".react-router/**/*"
+			".react-router/**/*",
+			"convex/_generated/**/*"
 		]
 	},
 	"formatter": {

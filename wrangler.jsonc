@@ -18,13 +18,6 @@
 	"observability": {
 		"enabled": true
 	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "app-db",
-			"database_id": "2060fb8d-100e-4ec5-8767-6992147757e5"
-		}
-	],
 	/**
 	 * Environment-specific configurations
 	 */

@@ -1,11 +1,12 @@
-import type { Todo } from "~/../../api/database/schema";
+import { useQuery } from "convex/react";
 import { LoadingSpinner } from "~/components/ui/loading-spinner";
-import { trpc } from "~/lib/trpc";
+import { api } from "../../../../convex/_generated/api";
 import { AddTodoForm } from "./add-todo-form";
 import { TodoItem } from "./todo-item";
 
 export const TodoList = () => {
-	const { data: todos, isLoading } = trpc.todos.list.useQuery();
+	const todos = useQuery(api.todos.list);
+	const isLoading = todos === undefined;
 
 	if (isLoading) {
 		return (
@@ -38,7 +39,7 @@ export const TodoList = () => {
 						</p>
 					</div>
 				) : (
-					todos?.map((todo: Todo) => <TodoItem key={todo.id} todo={todo} />)
+					todos?.map((todo) => <TodoItem key={todo._id} todo={todo} />)
 				)}
 			</div>
 		</div>

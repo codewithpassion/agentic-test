@@ -1,11 +1,7 @@
-import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 /// <reference path="../worker-configuration.d.ts" />
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { type AppLoadContext, createRequestHandler } from "react-router";
-import { appRouter } from "../api/trpc";
-import { createContext } from "../api/trpc/context";
-import { D1DbMiddleware } from "./middleware";
 import type { AppType } from "./types";
 
 declare module "react-router" {
@@ -25,8 +21,6 @@ const requestHandler = createRequestHandler(
 );
 
 const app = new Hono<AppType>();
-
-app.use(D1DbMiddleware);
 
 // CORS configuration for API routes
 app.use(
@@ -50,24 +44,6 @@ app.use(
 
 app.get("/api/health", (c) => {
 	return c.json({ status: "ok" });
-});
-
-app.get("/api/seed", async (c) => {
-	await c.var.Database.seed();
-	return c.json({ status: "ok" });
-});
-
-// tRPC handler
-app.all("/api/trpc/*", async (c) => {
-	return fetchRequestHandler({
-		endpoint: "/api/trpc",
-		req: c.req.raw,
-		router: appRouter,
-		createContext: (opts) => createContext({ ...opts, env: c.env }),
-		onError: ({ error, path }) => {
-			console.error(`tRPC Error on path '${path}':`, error);
-		},
-	});
 });
 
 app.use(async (c) => {
