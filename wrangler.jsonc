@@ -4,8 +4,8 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "todo-app",
-	"compatibility_date": "2025-02-24",
+	"name": "template-app",
+	"compatibility_date": "2025-09-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "./workers/app.ts",
 	"assets": {},
@@ -30,33 +30,19 @@
 	 */
 	"env": {
 		"staging": {
-			"name": "todo-app-staging",
+			"name": "template-app-staging",
 			"vars": {
 				"DEV_MODE": "false"
-			},
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "app-db-staging",
-					"database_id": "YOUR_STAGING_DB_ID"
-				}
-			]
+			}
 		},
 		"production": {
-			"name": "todo-app-prod",
+			"name": "template-app-prod",
 			"vars": {
 				"DEV_MODE": "false",
 				"FROM_EMAIL": "contact@messaging.portcityai.com",
-				"FROM_NAME": "Todo App",
+				"FROM_NAME": "Template App",
 				"SUPPORT_EMAIL": "support@example.com"
-			},
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "todo-app-prod-db",
-					"database_id": "beaacf56-b691-4aa5-be2c-7f8033dc62e2"
-				}
-			]
+			}
 		}
 	}
 	/**

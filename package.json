@@ -82,6 +82,6 @@
 		"stream-browserify": "^3.0.0",
 		"tailwindcss": "^4.0.0",
 		"typescript": "^5.7.2",
-		"wrangler": "^4.18.0"
+		"wrangler": "^4.34.0"
 	}
 }

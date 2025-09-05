@@ -1,0 +1,10 @@
+{
+	"mcpServers": {
+		"cloudflare-docs": {
+			"type": "stdio",
+			"command": "https://docs.mcp.cloudflare.com/sse",
+			"args": [],
+			"env": {}
+		}
+	}
+}

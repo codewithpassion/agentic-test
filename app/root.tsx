@@ -29,7 +29,19 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader(args: Route.LoaderArgs) {
-	return rootAuthLoader(args);
+	console.log("CLerk Key", args.context.cloudflare.env.CLERK_SECRET_KEY);
+	return rootAuthLoader(
+		args,
+		({ request, context, params }) => {
+			const { sessionId, userId, getToken } = request.auth;
+			// Add logic to fetch data
+			return { yourData: "here" };
+		},
+		{
+			secretKey: args.context.cloudflare.env.CLERK_SECRET_KEY,
+			publishableKey: args.context.cloudflare.env.VITE_CLERK_PUBLISHABLE_KEY,
+		}, // Options
+	);
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
