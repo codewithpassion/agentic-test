@@ -1,4 +1,7 @@
+import { useQuery } from "convex/react";
+import { useFetcher } from "react-router";
 import type { Permission, UserRole } from "~/types/auth";
+import { api } from "../../convex/_generated/api";
 
 interface RoleInfo {
 	name: UserRole;
@@ -42,34 +45,35 @@ interface UserStats {
 	totalSuperAdmins: number;
 }
 
-// Since user management is handled by Clerk, these are stubs for compatibility
-export function useUsers(_options: UseUsersOptions = {}) {
+// Fetch users from Convex
+export function useUsers(options: UseUsersOptions = {}) {
+	const data = useQuery(api.users.listUsers, {
+		search: options.search,
+		role: options.role,
+		limit: options.limit,
+		offset: options.offset,
+	});
+
 	return {
-		data: {
-			users: [],
-			totalCount: 0,
-			hasMore: false,
-		} as UsersResponse,
-		isLoading: false,
+		data: data as UsersResponse | undefined,
+		isLoading: data === undefined,
 		error: null as { message: string } | null,
 	};
 }
 
+// Fetch user statistics
 export function useUserStats() {
+	const data = useQuery(api.users.getUserStats);
+
 	return {
-		data: {
-			totalUsers: 0,
-			verifiedUsers: 0,
-			totalAdmins: 0,
-			totalSuperAdmins: 0,
-		} as UserStats,
-		isLoading: false,
+		data: data as UserStats | null,
+		isLoading: data === undefined,
 		error: null as { message: string } | null,
 	};
 }
 
+// Static role information
 export function useRoleInfo() {
-	// Static role information based on the system's role hierarchy
 	const roleInfo: RoleInfoResponse = {
 		roles: [
 			{
@@ -130,47 +134,176 @@ export function useRoleInfo() {
 	};
 }
 
-// Stubs for compatibility - actual user management happens in Clerk dashboard
-export function useUser(_id: string, _enabled = true) {
+// Fetch single user by ID
+export function useUser(id: string, enabled = true) {
+	const data = useQuery(
+		api.users.getUserById,
+		enabled ? { userId: id } : "skip",
+	);
+
 	return {
-		data: null,
-		isLoading: false,
-		error: null,
+		data: data || null,
+		isLoading: data === undefined && enabled,
+		error: null as { message: string } | null,
 	};
 }
 
+// Hook for updating user roles via server action
 export function useUpdateUser() {
+	const fetcher = useFetcher();
+
+	const mutate = (data: { userId: string; roles: UserRole[] }) => {
+		const formData = new FormData();
+		formData.append("intent", "updateRoles");
+		formData.append("userId", data.userId);
+		formData.append("roles", JSON.stringify(data.roles));
+		fetcher.submit(formData, {
+			method: "POST",
+			action: "/admin/users/api",
+		});
+	};
+
+	const mutateAsync = async (data: { userId: string; roles: UserRole[] }) => {
+		return new Promise((resolve, reject) => {
+			const formData = new FormData();
+			formData.append("intent", "updateRoles");
+			formData.append("userId", data.userId);
+			formData.append("roles", JSON.stringify(data.roles));
+
+			fetcher.submit(formData, {
+				method: "POST",
+				action: "/admin/users/api",
+			});
+
+			// Wait for response
+			setTimeout(() => {
+				if (fetcher.data?.success) {
+					resolve(fetcher.data);
+				} else if (fetcher.data?.error) {
+					reject(new Error(fetcher.data.error));
+				} else {
+					reject(new Error("Failed to update user"));
+				}
+			}, 1000);
+		});
+	};
+
 	return {
-		mutate: () => {},
-		mutateAsync: async (_data: unknown) => {
-			// Placeholder - actual user management happens in Clerk dashboard
-			throw new Error("User updates are managed through Clerk dashboard");
-		},
-		isLoading: false,
-		isPending: false,
-		error: null as { message: string } | null,
+		mutate,
+		mutateAsync,
+		isLoading: fetcher.state === "submitting",
+		isPending: fetcher.state === "submitting",
+		error: fetcher.data?.error
+			? { message: fetcher.data.error }
+			: (null as { message: string } | null),
 	};
 }
 
+// Hook for assigning roles
 export function useAssignRole() {
+	const fetcher = useFetcher();
+
+	const mutate = (data: { userId: string; role: UserRole }) => {
+		const formData = new FormData();
+		formData.append("intent", "addRole");
+		formData.append("userId", data.userId);
+		formData.append("role", data.role);
+		fetcher.submit(formData, {
+			method: "POST",
+			action: "/admin/users/api",
+		});
+	};
+
+	const mutateAsync = async (data: { userId: string; role: UserRole }) => {
+		return new Promise((resolve, reject) => {
+			const formData = new FormData();
+			formData.append("intent", "addRole");
+			formData.append("userId", data.userId);
+			formData.append("role", data.role);
+
+			fetcher.submit(formData, {
+				method: "POST",
+				action: "/admin/users/api",
+			});
+
+			// Wait for response
+			setTimeout(() => {
+				if (fetcher.data?.success) {
+					resolve(fetcher.data);
+				} else if (fetcher.data?.error) {
+					reject(new Error(fetcher.data.error));
+				} else {
+					reject(new Error("Failed to assign role"));
+				}
+			}, 1000);
+		});
+	};
+
 	return {
-		mutate: () => {},
-		mutateAsync: async (_data: unknown) => {
-			// Placeholder - actual role assignment happens in Clerk dashboard
-			throw new Error("Role assignment is managed through Clerk dashboard");
-		},
-		isLoading: false,
-		isPending: false,
-		error: null as { message: string } | null,
+		mutate,
+		mutateAsync,
+		isLoading: fetcher.state === "submitting",
+		isPending: fetcher.state === "submitting",
+		error: fetcher.data?.error
+			? { message: fetcher.data.error }
+			: (null as { message: string } | null),
 	};
 }
 
+// Hook for promoting users
+export function usePromoteUser() {
+	const fetcher = useFetcher();
+
+	const mutate = (userId: string) => {
+		const formData = new FormData();
+		formData.append("intent", "promote");
+		formData.append("userId", userId);
+		fetcher.submit(formData, {
+			method: "POST",
+			action: "/admin/users/api",
+		});
+	};
+
+	return {
+		mutate,
+		isLoading: fetcher.state === "submitting",
+		error: fetcher.data?.error
+			? { message: fetcher.data.error }
+			: (null as { message: string } | null),
+	};
+}
+
+// Hook for demoting users
+export function useDemoteUser() {
+	const fetcher = useFetcher();
+
+	const mutate = (userId: string) => {
+		const formData = new FormData();
+		formData.append("intent", "demote");
+		formData.append("userId", userId);
+		fetcher.submit(formData, {
+			method: "POST",
+			action: "/admin/users/api",
+		});
+	};
+
+	return {
+		mutate,
+		isLoading: fetcher.state === "submitting",
+		error: fetcher.data?.error
+			? { message: fetcher.data.error }
+			: (null as { message: string } | null),
+	};
+}
+
+// Note: User creation is handled through Clerk's dashboard
 export function useCreateUser() {
 	return {
 		mutate: () => {},
 		mutateAsync: async (_data: unknown) => {
-			// Placeholder - actual user creation happens in Clerk dashboard
-			throw new Error("User creation is managed through Clerk dashboard");
+			throw new Error(
+				"User creation should be done through Clerk dashboard or signup flow",
+			);
 		},
 		isLoading: false,
 		isPending: false,

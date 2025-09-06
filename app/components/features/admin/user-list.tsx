@@ -254,11 +254,17 @@ export function UserList({ initialSearch = "", initialRole }: UserListProps) {
 												</time>
 											</td>
 											<td className="py-3 px-4 text-center">
-												<Link to={`/admin/users/${user.id}/edit`}>
-													<Button variant="outline" size="sm">
-														Edit
+												{hasRole("superadmin") ? (
+													<Link to={`/admin/users/${user.id}/edit`}>
+														<Button variant="outline" size="sm">
+															Edit
+														</Button>
+													</Link>
+												) : (
+													<Button variant="outline" size="sm" disabled>
+														View Only
 													</Button>
-												</Link>
+												)}
 											</td>
 										</tr>
 									))}

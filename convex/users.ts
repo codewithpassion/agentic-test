@@ -186,14 +186,14 @@ export const getAdminStats = query({
 			return null;
 		}
 
-		// Check if user is admin - you may want to add role checking here
+		// Check if user is admin
 		const user = await ctx.db
 			.query("users")
 			.withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
 			.unique();
 
-		if (!user) {
-			return null;
+		if (!user || !user.roles?.includes("admin")) {
+			throw new ConvexError("Unauthorized: Admin access required");
 		}
 
 		// Get all todos for system-wide stats
@@ -202,9 +202,12 @@ export const getAdminStats = query({
 
 		// Get all users
 		const allUsers = await ctx.db.query("users").collect();
-		// Since role is not in schema yet, assume no admins for now
-		// TODO: Add role field to users schema and implement role checking
-		const adminUsers = [];
+		const adminUsers = allUsers.filter(
+			(u) => u.roles?.includes("admin") || u.roles?.includes("superadmin"),
+		);
+		const superAdminUsers = allUsers.filter((u) =>
+			u.roles?.includes("superadmin"),
+		);
 
 		// Get today's stats (assuming createdAt is timestamp in milliseconds)
 		const today = new Date();
@@ -216,8 +219,6 @@ export const getAdminStats = query({
 			(todo) =>
 				todo.createdAt >= todayTimestamp && todo.createdAt < tomorrowTimestamp,
 		);
-		// Since there's no updatedAt field in todos schema, we'll use a simpler approach
-		// Count completed todos that were created today (approximation)
 		const todaysCompletedTodos = todaysTodos.filter((todo) => todo.completed);
 
 		return {
@@ -229,11 +230,164 @@ export const getAdminStats = query({
 			users: {
 				total: allUsers.length,
 				admins: adminUsers.length,
+				superAdmins: superAdminUsers.length,
 			},
 			today: {
 				newTodos: todaysTodos.length,
 				completedTodos: todaysCompletedTodos.length,
 			},
+		};
+	},
+});
+
+// List users with pagination, search, and filtering
+export const listUsers = query({
+	args: {
+		search: v.optional(v.string()),
+		role: v.optional(v.string()),
+		limit: v.optional(v.number()),
+		offset: v.optional(v.number()),
+	},
+	handler: async (ctx: QueryCtx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new ConvexError("Not authenticated");
+		}
+
+		// Check if user has admin access
+		const currentUser = await ctx.db
+			.query("users")
+			.withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+			.unique();
+
+		if (!currentUser || !currentUser.roles?.includes("admin")) {
+			throw new ConvexError("Unauthorized: Admin access required");
+		}
+
+		const limit = args.limit || 20;
+		const offset = args.offset || 0;
+
+		// Get all users
+		let users = await ctx.db.query("users").collect();
+
+		// Filter by role if specified
+		if (args.role) {
+			users = users.filter((u) => u.roles?.includes(args.role as string));
+		}
+
+		// Search by name or email
+		if (args.search) {
+			const searchLower = args.search.toLowerCase();
+			users = users.filter(
+				(u) =>
+					u.name?.toLowerCase().includes(searchLower) ||
+					u.email?.toLowerCase().includes(searchLower),
+			);
+		}
+
+		// Sort by creation date (newest first)
+		users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+		// Apply pagination
+		const totalCount = users.length;
+		const paginatedUsers = users.slice(offset, offset + limit);
+		const hasMore = offset + limit < totalCount;
+
+		// Format users for response
+		const formattedUsers = paginatedUsers.map((u) => ({
+			id: u.clerkId, // Use clerkId as the user ID for consistency
+			name: u.name || "Unknown",
+			email: u.email || "",
+			image: u.imageUrl,
+			roles: u.roles?.[0] || "user", // Return primary role for compatibility
+			emailVerified: true, // Clerk handles email verification
+			createdAt: new Date(u.createdAt || 0).toISOString(),
+		}));
+
+		return {
+			users: formattedUsers,
+			totalCount,
+			hasMore,
+		};
+	},
+});
+
+// Get user statistics for admin dashboard
+export const getUserStats = query({
+	args: {},
+	handler: async (ctx: QueryCtx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return null;
+		}
+
+		// Check if user has admin access
+		const currentUser = await ctx.db
+			.query("users")
+			.withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+			.unique();
+
+		if (!currentUser || !currentUser.roles?.includes("admin")) {
+			return null;
+		}
+
+		const allUsers = await ctx.db.query("users").collect();
+
+		const verifiedUsers = allUsers.length; // All Clerk users are verified
+		const adminUsers = allUsers.filter(
+			(u) => u.roles?.includes("admin") && !u.roles?.includes("superadmin"),
+		);
+		const superAdminUsers = allUsers.filter((u) =>
+			u.roles?.includes("superadmin"),
+		);
+
+		return {
+			totalUsers: allUsers.length,
+			verifiedUsers,
+			totalAdmins: adminUsers.length,
+			totalSuperAdmins: superAdminUsers.length,
+		};
+	},
+});
+
+// Get user by ID
+export const getUserById = query({
+	args: {
+		userId: v.string(),
+	},
+	handler: async (ctx: QueryCtx, { userId }) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return null;
+		}
+
+		// Check if user has admin access
+		const currentUser = await ctx.db
+			.query("users")
+			.withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+			.unique();
+
+		if (!currentUser || !currentUser.roles?.includes("admin")) {
+			throw new ConvexError("Unauthorized: Admin access required");
+		}
+
+		// Get user by clerkId
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_clerkId", (q) => q.eq("clerkId", userId))
+			.unique();
+
+		if (!user) {
+			return null;
+		}
+
+		return {
+			id: user.clerkId,
+			name: user.name || "Unknown",
+			email: user.email || "",
+			image: user.imageUrl,
+			roles: user.roles || ["user"],
+			createdAt: new Date(user.createdAt || 0).toISOString(),
 		};
 	},
 });

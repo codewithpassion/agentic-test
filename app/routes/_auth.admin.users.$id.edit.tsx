@@ -1,30 +1,33 @@
 import { useParams } from "react-router";
 import { UserForm } from "~/components/features/admin/user-form";
-import { LoadingSpinner } from "~/components/ui/loading-spinner";
-import { useUser } from "~/hooks/use-user-management";
+import { useAuth } from "~/hooks/use-auth";
 
 export default function EditUserPage() {
 	const { id } = useParams();
+	const { hasRole } = useAuth();
 
-	const { data: user, isLoading, error } = useUser(id || "", !!id);
-
-	if (isLoading) {
+	// Only superadmins can edit users
+	if (!hasRole("superadmin")) {
 		return (
-			<div className="flex items-center justify-center h-64">
-				<LoadingSpinner />
+			<div className="space-y-6">
+				<div>
+					<h1 className="text-2xl font-bold">Access Denied</h1>
+					<p className="text-red-600">
+						Only Super Administrators can edit user roles and permissions.
+					</p>
+				</div>
 			</div>
 		);
 	}
 
-	// Since user management is handled in Clerk dashboard, redirect or show message
 	return (
 		<div className="space-y-6">
 			<div>
 				<h1 className="text-2xl font-bold">Edit User</h1>
-				<p className="text-gray-600">Modify user details and permissions</p>
+				<p className="text-gray-600">Modify user roles and permissions</p>
 			</div>
 
-			<UserForm mode="edit" />
+			<UserForm mode="edit" userId={id} />
 		</div>
 	);
 }

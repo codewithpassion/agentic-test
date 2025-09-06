@@ -1,84 +1,25 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router";
-import { z } from "zod";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
-import { LoadingSpinner } from "~/components/ui/loading-spinner";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "~/components/ui/card";
 import { useAuth } from "~/hooks/use-auth";
-import { useCreateUser, useRoleInfo } from "~/hooks/use-user-management";
-import type { UserRole } from "~/types/auth";
-
-const createUserFormSchema = z.object({
-	name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-	email: z.string().email("Invalid email address"),
-	roles: z.enum(["user", "admin", "superadmin"]),
-	emailVerified: z.boolean(),
-});
-
-type CreateUserFormData = z.infer<typeof createUserFormSchema>;
 
 export function UserCreateForm() {
 	const navigate = useNavigate();
 	const { hasRole } = useAuth();
-	const { data: roleInfo } = useRoleInfo();
 
-	const {
-		register,
-		handleSubmit,
-		formState: { errors, isSubmitting },
-		watch,
-	} = useForm<CreateUserFormData>({
-		resolver: zodResolver(createUserFormSchema),
-		defaultValues: {
-			name: "",
-			email: "",
-			roles: "user",
-			emailVerified: false,
-		},
-	});
-
-	const createMutation = useCreateUser();
-	const selectedRole = watch("roles");
-	const canCreateUsers = hasRole("superadmin");
-
-	const onSubmit = async (data: CreateUserFormData) => {
-		try {
-			await createMutation.mutateAsync(data);
-			navigate("/admin/users");
-		} catch (error) {
-			// Error handling is done in mutation callbacks
-		}
-	};
-
-	const getRoleBadge = (role: UserRole) => {
-		switch (role) {
-			case "superadmin":
-				return <Badge variant="destructive">Super Admin</Badge>;
-			case "admin":
-				return <Badge variant="secondary">Admin</Badge>;
-			case "user":
-				return <Badge variant="outline">User</Badge>;
-			default:
-				return <Badge variant="outline">{role}</Badge>;
-		}
-	};
-
-	const getRoleDescription = (role: UserRole) => {
-		const roleData = roleInfo?.roles.find(
-			(r: { name: UserRole; description: string }) => r.name === role,
-		);
-		return roleData?.description || "";
-	};
-
-	if (!canCreateUsers) {
+	if (!hasRole("superadmin")) {
 		return (
 			<Card>
 				<CardContent className="p-6">
 					<div className="text-center text-red-600">
-						<p>SuperAdmin role required to create users</p>
+						<p>SuperAdmin role required to manage users</p>
 						<Button
 							variant="outline"
 							onClick={() => navigate("/admin/users")}
@@ -93,163 +34,135 @@ export function UserCreateForm() {
 	}
 
 	return (
-		<Card className="max-w-2xl mx-auto">
-			<CardHeader>
-				<CardTitle>Create New User</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-					{/* User Details */}
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						{/* Name */}
+		<div className="space-y-6">
+			<Card>
+				<CardHeader>
+					<CardTitle>Create New Users</CardTitle>
+					<CardDescription>
+						User accounts are created through Clerk's authentication system
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="space-y-4">
 						<div>
-							<label
-								htmlFor="name"
-								className="block text-sm font-medium text-gray-700 mb-1"
-							>
-								Name *
-							</label>
-							<Input
-								id="name"
-								{...register("name")}
-								placeholder="Enter full name"
-								className={errors.name ? "border-red-500" : ""}
-							/>
-							{errors.name && (
-								<p className="text-red-500 text-sm mt-1">
-									{errors.name.message}
-								</p>
-							)}
-						</div>
-
-						{/* Email */}
-						<div>
-							<label
-								htmlFor="email"
-								className="block text-sm font-medium text-gray-700 mb-1"
-							>
-								Email *
-							</label>
-							<Input
-								id="email"
-								type="email"
-								{...register("email")}
-								placeholder="Enter email address"
-								className={errors.email ? "border-red-500" : ""}
-							/>
-							{errors.email && (
-								<p className="text-red-500 text-sm mt-1">
-									{errors.email.message}
-								</p>
-							)}
-						</div>
-					</div>
-
-					{/* Role Selection */}
-					<div>
-						<label
-							htmlFor="roles"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
-							Role *
-						</label>
-						<select
-							id="roles"
-							{...register("roles")}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						>
-							<option value="user">User</option>
-							<option value="admin">Admin</option>
-							<option value="superadmin">Super Admin</option>
-						</select>
-						{errors.roles && (
-							<p className="text-red-500 text-sm mt-1">
-								{errors.roles.message}
+							<h4 className="font-medium mb-2">
+								Option 1: User Self-Registration
+							</h4>
+							<p className="text-sm text-gray-600 mb-3">
+								Users can create their own accounts through the application's
+								sign-up page. They will receive the default "user" role upon
+								registration.
 							</p>
-						)}
-						{selectedRole && (
-							<div className="mt-2 flex items-center gap-2">
-								{getRoleBadge(selectedRole)}
-								<span className="text-gray-600 text-sm">
-									{getRoleDescription(selectedRole)}
-								</span>
-							</div>
-						)}
-					</div>
-
-					{/* Options */}
-					<div className="space-y-3">
-						<div className="flex items-center gap-3">
-							<input
-								id="emailVerified"
-								type="checkbox"
-								{...register("emailVerified")}
-								className="rounded border-gray-300"
-							/>
-							<label
-								htmlFor="emailVerified"
-								className="text-sm font-medium text-gray-700"
-							>
-								Mark email as verified
-							</label>
+							<Button variant="outline" asChild>
+								<a href="/sign-up" target="_blank" rel="noopener noreferrer">
+									<ExternalLink className="h-4 w-4 mr-2" />
+									View Sign-Up Page
+								</a>
+							</Button>
 						</div>
-					</div>
 
-					{/* Information Box */}
-					<div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-						<h4 className="font-medium text-blue-900 mb-2">
-							ℹ️ About User Creation
-						</h4>
-						<ul className="text-blue-800 text-sm space-y-1">
-							<li>
-								• Created users will need to set up their password through the
-								normal signup flow
-							</li>
-							<li>
-								• If email verification is unchecked, users must verify their
-								email
-							</li>
-							<li>
-								• Users can change their profile details after first login
-							</li>
-							<li>
-								• Role can be modified later from the user management panel
-							</li>
-						</ul>
-					</div>
+						<div className="border-t pt-4">
+							<h4 className="font-medium mb-2">Option 2: Clerk Dashboard</h4>
+							<p className="text-sm text-gray-600 mb-3">
+								As an administrator, you can create users directly in the Clerk
+								dashboard. This allows you to set custom metadata and manage
+								authentication settings.
+							</p>
+							<Button variant="outline" asChild>
+								<a
+									href="https://dashboard.clerk.com"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<ExternalLink className="h-4 w-4 mr-2" />
+									Open Clerk Dashboard
+								</a>
+							</Button>
+						</div>
 
-					{/* Form Actions */}
-					<div className="flex items-center justify-between pt-6 border-t">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => navigate("/admin/users")}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							disabled={isSubmitting || createMutation.isPending}
-							className="min-w-24"
-						>
-							{isSubmitting || createMutation.isPending ? (
-								<LoadingSpinner className="h-4 w-4" />
-							) : (
-								"Create User"
-							)}
-						</Button>
-					</div>
-
-					{/* Error Messages */}
-					{createMutation.error && (
-						<div className="bg-red-50 border border-red-200 rounded-md p-4">
-							<p className="text-red-600 text-sm">
-								{createMutation.error.message}
+						<div className="border-t pt-4">
+							<h4 className="font-medium mb-2">Option 3: Invite Users</h4>
+							<p className="text-sm text-gray-600">
+								You can implement an invitation system where administrators can
+								send email invites to new users. This requires additional
+								configuration in your Clerk dashboard and custom invitation flow
+								implementation.
 							</p>
 						</div>
-					)}
-				</form>
-			</CardContent>
-		</Card>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>After User Creation</CardTitle>
+					<CardDescription>
+						What happens when a new user is created
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+						<li>User signs up or is created in Clerk</li>
+						<li>
+							Clerk triggers webhook or user signs in, syncing data to Convex
+							database
+						</li>
+						<li>Default role "user" is assigned automatically</li>
+						<li>
+							You can edit the user from the{" "}
+							<Button
+								variant="link"
+								className="p-0 h-auto text-blue-600"
+								onClick={() => navigate("/admin/users")}
+							>
+								User Management
+							</Button>{" "}
+							page to assign additional roles
+						</li>
+						<li>Email verification is handled by Clerk if configured</li>
+					</ol>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Why Use Clerk for User Creation?</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<ul className="space-y-2 text-sm text-gray-600">
+						<li className="flex items-start gap-2">
+							<span className="text-green-600 mt-0.5">✓</span>
+							<span>
+								Secure authentication with built-in password policies and MFA
+							</span>
+						</li>
+						<li className="flex items-start gap-2">
+							<span className="text-green-600 mt-0.5">✓</span>
+							<span>Automatic email verification and password reset flows</span>
+						</li>
+						<li className="flex items-start gap-2">
+							<span className="text-green-600 mt-0.5">✓</span>
+							<span>Social login providers (Google, GitHub, etc.)</span>
+						</li>
+						<li className="flex items-start gap-2">
+							<span className="text-green-600 mt-0.5">✓</span>
+							<span>
+								Session management and JWT tokens handled automatically
+							</span>
+						</li>
+						<li className="flex items-start gap-2">
+							<span className="text-green-600 mt-0.5">✓</span>
+							<span>GDPR compliant with user data management</span>
+						</li>
+					</ul>
+				</CardContent>
+			</Card>
+
+			<div className="flex justify-center">
+				<Button onClick={() => navigate("/admin/users")}>
+					Back to User Management
+				</Button>
+			</div>
+		</div>
 	);
 }
