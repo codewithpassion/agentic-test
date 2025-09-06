@@ -5,7 +5,7 @@ A modern, production-ready template for building full-stack React applications u
 ## Features
 
 - 🚀 Server-side rendering
-- 🗄️ Cloudflare D1 data storage using drizzle
+- 🗄️ Convex real-time database
 - 🪟 ShadCN components
 - 🔑 Authentication with Clerk
 - ⚡️ Hot Module Replacement (HMR)
@@ -40,20 +40,6 @@ Check and lint:
 
 ```bash
 bun check
-```
-
-### Update DB:
-
-Update the drizzle migrations and run them locally:
-
-```bash
-bun run db:update
-```
-
-Update the remote db:
-
-```bash
-bun run db:apply --remote
 ```
 
 ## Previewing the Production Build
@@ -101,5 +87,3 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 ---
 
 Built with ❤️ using React Router.
-
-bunx @better-auth/cli generate --output db/auth-schema-admin.ts

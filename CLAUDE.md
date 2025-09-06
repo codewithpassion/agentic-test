@@ -15,12 +15,10 @@ bun check            # Run all checks (types, linting, formatting)
 bun biome:check      # Run Biome linter and formatter only
 ```
 
-### Database
+### Convex Database
 ```bash
-bun db:update        # Generate and apply migrations locally
-bun db:apply --remote # Apply migrations to remote DB
-bun db:gen           # Generate migrations only
-bun db:deploy:prod   # Deploy to production database
+bun convex:dev       # Start Convex dev server
+bun convex:deploy    # Deploy to production
 ```
 
 ### Build & Deploy
@@ -43,13 +41,13 @@ wrangler secret put VARIABLE_NAME # Add production secrets
 
 ### Project Structure
 - `/app` - Frontend React code (routes, components, hooks)
-- `/api` - Backend API code (tRPC routers, services, database)
+- `/convex` - Convex backend functions and schema
 - `/workers` - Cloudflare Workers entry points
 
 ### Key Technologies
 - **Frontend**: React 19, React Router 7, TypeScript, TailwindCSS, ShadCN UI
-- **Backend**: Cloudflare Workers, Hono, tRPC, Drizzle ORM
-- **Database**: Cloudflare D1 (SQLite)
+- **Backend**: Cloudflare Workers, Hono, Convex
+- **Database**: Convex real-time database
 - **Auth**: Clerk authentication (external service)
 - **Tooling**: Bun, Biome, Wrangler
 
@@ -72,22 +70,16 @@ wrangler secret put VARIABLE_NAME # Add production secrets
 - Variables/functions: `camelCase`
 - Database tables: `snake_case`
 
-## Database & Data Layer
+## Convex Data Layer
 
 ### Schema Location
-- Database schema: `/api/database/schema.ts`
-- Migrations: `/api/database/migrations/`
-
-### Important Schema Notes
-- User table has `roles` field (not `role`) - single text field
-- Timestamp fields may be nullable - always check before using
-- D1/SQLite expects Unix timestamps (seconds) not Date objects
-- Use `and()` for multiple WHERE conditions in queries
+- Database schema: `/convex/schema.ts`
+- Functions: `/convex/` directory
 
 ### Data Access Patterns
-1. **Services**: Create service classes in `/api/services/` for database operations
-2. **tRPC Routers**: Define in `/api/trpc/routers/` with Zod validation
-3. **Frontend Hooks**: Create custom hooks in `/app/hooks/` using tRPC queries
+1. **Convex Functions**: Define queries, mutations, and actions in `/convex/`
+2. **Frontend Hooks**: Use Convex React hooks (`useQuery`, `useMutation`)
+3. **Real-time Updates**: Automatic reactivity with Convex subscriptions
 4. **Error Handling**: Always handle loading and error states in components
 
 ## Authentication System
@@ -106,7 +98,7 @@ wrangler secret put VARIABLE_NAME # Add production secrets
 ### Protected Routes
 - Routes under `_auth.*` require authentication
 - Admin routes check for admin/superadmin roles
-- Use `protectedProcedure` in tRPC for auth-required endpoints
+- Use Convex auth helpers for protected functions
 
 ## Environment Variables
 
@@ -143,7 +135,7 @@ Components are installed to `/app/components/ui/`
 
 ### Development
 - URL: http://localhost:5173
-- Database: Local D1 instance
+- Database: Local Convex instance
 - Email: Mock email service (logs to console)
 
 ### Staging
@@ -152,18 +144,16 @@ Components are installed to `/app/components/ui/`
 - Logs: `bun tail:staging`
 
 ### Production
-- Database: `todo-app-prod-db`
+- Database: Production Convex deployment
 - Deploy: `bun deploy:prod`
-- Migrations: `bun db:deploy:prod`
 - Logs: `bun tail:prod`
 
 ## Common Development Tasks
 
 ### Adding a New API Endpoint
-1. Create service in `/api/services/` if needed
-2. Add tRPC router in `/api/trpc/routers/`
-3. Register router in `/api/trpc/index.ts`
-4. Create hook in `/app/hooks/` for frontend usage
+1. Create Convex function in `/convex/` directory
+2. Define schema if needed in `/convex/schema.ts`
+3. Use Convex hooks in React components
 
 ### Adding a New Page
 1. Create route file in `/app/routes/`
@@ -172,10 +162,10 @@ Components are installed to `/app/components/ui/`
 4. Wrap in `PublicLayout` if needed
 
 ### Modifying Database Schema
-1. Edit `/api/database/schema.ts`
-2. Run `bun db:update` to generate and apply locally
-3. Test thoroughly
-4. Run `bun db:apply --remote` for production
+1. Edit `/convex/schema.ts`
+2. Update Convex functions as needed
+3. Test with `bun convex:dev`
+4. Deploy with `bun convex:deploy`
 
 ## Troubleshooting
 
@@ -185,9 +175,9 @@ Components are installed to `/app/components/ui/`
 - Ensure no `any` types are used
 
 ### Database Errors
-- D1 requires Unix timestamps, not Date objects
-- Check nullable fields before using
-- Use proper Drizzle query syntax
+- Check Convex function arguments and return types
+- Verify schema definitions match usage
+- Use Convex dashboard for debugging
 
 ### Authentication Issues
 - Check magic link expiration (15 minutes)

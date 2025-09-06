@@ -5,8 +5,8 @@
 - `bun build`: Build for production
 - `bun deploy`: Build and deploy to Cloudflare
 - `bun preview`: Preview production build locally
-- `bun db:update`: Generate and apply DB migrations locally
-- `bun db:apply --remote`: Apply migrations to remote DB
+- `bun convex:dev`: Start Convex dev server
+- `bun convex:deploy`: Deploy to production
 
 # Style Guide
 
@@ -29,16 +29,15 @@
 ## Frontend
 - Use TailwindCSS for styling
 - Utilize ShadCN components from `app/components/ui`
-- Authentication through `better-auth` package
+- Authentication through Clerk (external service)
 
 
 ## Backend
 - Always use `bun` as the package manager
 - Use `hono` for backend functionality
-- use the `packages/better-auth/auth.ts` on the server side to access better-auth
-- Database: Drizzle ORM with schemas in `api/database/schema.ts` (SQLite tables)
-- Data storage: Cloudflare D1 and KV with Drizzle ORM
-- Use tRPC for API access
+- Database: Convex real-time database with schemas in `/convex/schema.ts`
+- Data storage: Convex with automatic real-time sync
+- Use Convex functions for data access
 
 ## Environment Variables & Types
 - **Never directly edit** `worker-configuration.d.ts` (auto-generated file)
