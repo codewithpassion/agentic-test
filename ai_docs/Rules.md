@@ -42,7 +42,7 @@
 ## Environment Variables & Types
 - **Never directly edit** `worker-configuration.d.ts` (auto-generated file)
 - Add environment variables to `wrangler.jsonc` (`vars` section)
-- Add secrets to `.dev.vars` for local development and `.dev.vars.example` for documentation
+- Add secrets to `.env` for local development and `.env.example` for documentation
 - Run `bun cf-typegen` to regenerate TypeScript types after changes
 - Use `wrangler secret put VARIABLE_NAME` for production secrets
 
