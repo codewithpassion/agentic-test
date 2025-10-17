@@ -1,19 +1,6 @@
-import {
-	SignInButton,
-	SignedIn,
-	SignedOut,
-	UserButton,
-} from "@clerk/react-router";
-import { LogOut, User } from "lucide-react";
+import { SignedIn, SignedOut, UserButton } from "@clerk/react-router";
 import { Link } from "react-router";
 import { Button } from "~/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { useAuth } from "~/hooks/use-auth";
 
 export function NavigationHeader() {
@@ -53,9 +40,9 @@ export function NavigationHeader() {
 							</div>
 						</SignedIn>
 						<SignedOut>
-							<SignInButton mode="modal">
-								<Button size="sm">Sign In</Button>
-							</SignInButton>
+							<Button asChild size="sm">
+								<Link to="/login">Sign In</Link>
+							</Button>
 						</SignedOut>
 					</div>
 				</div>
