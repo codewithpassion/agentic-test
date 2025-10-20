@@ -127,16 +127,6 @@ export const deleteUser = internalMutation({
 			throw new ConvexError("User not found");
 		}
 
-		// Delete all todos for this user
-		const todos = await ctx.db
-			.query("todos")
-			.withIndex("by_user", (q) => q.eq("userId", user._id))
-			.collect();
-
-		for (const todo of todos) {
-			await ctx.db.delete(todo._id);
-		}
-
 		// Delete the user
 		await ctx.db.delete(user._id);
 
@@ -162,17 +152,9 @@ export const getStats = query({
 			return null;
 		}
 
-		const todos = await ctx.db
-			.query("todos")
-			.withIndex("by_user", (q) => q.eq("userId", user._id))
-			.collect();
-
-		const completedTodos = todos.filter((todo) => todo.completed);
-
 		return {
-			totalTodos: todos.length,
-			completedTodos: completedTodos.length,
-			pendingTodos: todos.length - completedTodos.length,
+			// User stats without todo data
+			memberSince: user.createdAt,
 		};
 	},
 });
@@ -196,10 +178,6 @@ export const getAdminStats = query({
 			throw new ConvexError("Unauthorized: Admin access required");
 		}
 
-		// Get all todos for system-wide stats
-		const allTodos = await ctx.db.query("todos").collect();
-		const completedTodos = allTodos.filter((todo) => todo.completed);
-
 		// Get all users
 		const allUsers = await ctx.db.query("users").collect();
 		const adminUsers = allUsers.filter(
@@ -209,32 +187,11 @@ export const getAdminStats = query({
 			u.roles?.includes("superadmin"),
 		);
 
-		// Get today's stats (assuming createdAt is timestamp in milliseconds)
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const todayTimestamp = today.getTime();
-		const tomorrowTimestamp = todayTimestamp + 24 * 60 * 60 * 1000;
-
-		const todaysTodos = allTodos.filter(
-			(todo) =>
-				todo.createdAt >= todayTimestamp && todo.createdAt < tomorrowTimestamp,
-		);
-		const todaysCompletedTodos = todaysTodos.filter((todo) => todo.completed);
-
 		return {
-			todos: {
-				total: allTodos.length,
-				completed: completedTodos.length,
-				pending: allTodos.length - completedTodos.length,
-			},
 			users: {
 				total: allUsers.length,
 				admins: adminUsers.length,
 				superAdmins: superAdminUsers.length,
-			},
-			today: {
-				newTodos: todaysTodos.length,
-				completedTodos: todaysCompletedTodos.length,
 			},
 		};
 	},

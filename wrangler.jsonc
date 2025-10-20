@@ -4,14 +4,14 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "template-app",
+	"name": "worktime-tracker",
 	"compatibility_date": "2025-09-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "./workers/app.ts",
 	"assets": {},
 	"vars": {
 		"FROM_EMAIL": "contact@messaging.portcityai.com",
-		"FROM_NAME": "React Router Boilerplate",
+		"FROM_NAME": "Worktime Tracker",
 		"SUPPORT_EMAIL": "support@example.com",
 		"DEV_MODE": "true"
 	},
@@ -23,17 +23,17 @@
 	 */
 	"env": {
 		"staging": {
-			"name": "template-app-staging",
+			"name": "worktime-tracker-staging",
 			"vars": {
 				"DEV_MODE": "false"
 			}
 		},
 		"production": {
-			"name": "template-app-prod",
+			"name": "worktime-tracker-prod",
 			"vars": {
 				"DEV_MODE": "false",
 				"FROM_EMAIL": "contact@messaging.portcityai.com",
-				"FROM_NAME": "Template App",
+				"FROM_NAME": "Worktime Tracker",
 				"SUPPORT_EMAIL": "support@example.com"
 			}
 		}

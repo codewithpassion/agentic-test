@@ -23,14 +23,8 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 
 // Permission definitions
 export const PERMISSIONS = {
-	// User permissions
-	CREATE_TODO: "create_todo",
-	EDIT_TODO: "edit_todo",
-	DELETE_TODO: "delete_todo",
-
 	// Admin permissions
-	MANAGE_TODOS: "manage_todos",
-	VIEW_ALL_TODOS: "view_all_todos",
+	VIEW_USERS: "view_users",
 
 	// SuperAdmin permissions
 	MANAGE_USERS: "manage_users",
@@ -42,27 +36,14 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 // Role-permission mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-	user: [
-		PERMISSIONS.CREATE_TODO,
-		PERMISSIONS.EDIT_TODO,
-		PERMISSIONS.DELETE_TODO,
-	],
+	user: [],
 	admin: [
-		// All user permissions
-		PERMISSIONS.CREATE_TODO,
-		PERMISSIONS.EDIT_TODO,
-		PERMISSIONS.DELETE_TODO,
-		// Plus admin permissions
-		PERMISSIONS.MANAGE_TODOS,
-		PERMISSIONS.VIEW_ALL_TODOS,
+		// Admin permissions
+		PERMISSIONS.VIEW_USERS,
 	],
 	superadmin: [
 		// All admin permissions
-		PERMISSIONS.CREATE_TODO,
-		PERMISSIONS.EDIT_TODO,
-		PERMISSIONS.DELETE_TODO,
-		PERMISSIONS.MANAGE_TODOS,
-		PERMISSIONS.VIEW_ALL_TODOS,
+		PERMISSIONS.VIEW_USERS,
 		// Plus superadmin permissions
 		PERMISSIONS.MANAGE_USERS,
 		PERMISSIONS.ASSIGN_ROLES,

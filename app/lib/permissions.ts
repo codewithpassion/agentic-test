@@ -13,15 +13,6 @@ export const PERMISSIONS = {
 	"users.delete": "Delete users",
 	"users.manage_roles": "Manage user roles",
 
-	// Todo permissions
-	"todos.view_own": "View own todos",
-	"todos.create_own": "Create own todos",
-	"todos.edit_own": "Edit own todos",
-	"todos.delete_own": "Delete own todos",
-	"todos.view_all": "View all todos",
-	"todos.edit_all": "Edit any todo",
-	"todos.delete_all": "Delete any todo",
-
 	// Admin permissions
 	"admin.access": "Access admin dashboard",
 	"admin.view_stats": "View system statistics",
@@ -39,29 +30,15 @@ export type Permission = keyof typeof PERMISSIONS;
 
 // Role-permission mappings
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-	user: [
-		"todos.view_own",
-		"todos.create_own",
-		"todos.edit_own",
-		"todos.delete_own",
-	],
+	user: [],
 
 	admin: [
-		// Inherit all user permissions
-		"todos.view_own",
-		"todos.create_own",
-		"todos.edit_own",
-		"todos.delete_own",
-
 		// Admin-specific permissions
 		"admin.access",
 		"admin.view_stats",
 		"users.view",
 		"users.create",
 		"users.edit",
-		"todos.view_all",
-		"todos.edit_all",
-		"todos.delete_all",
 	],
 
 	superadmin: [
@@ -78,15 +55,6 @@ export const PERMISSION_GROUPS = {
 		"users.edit",
 		"users.delete",
 		"users.manage_roles",
-	],
-	"Todo Management": [
-		"todos.view_own",
-		"todos.create_own",
-		"todos.edit_own",
-		"todos.delete_own",
-		"todos.view_all",
-		"todos.edit_all",
-		"todos.delete_all",
 	],
 	Administration: [
 		"admin.access",

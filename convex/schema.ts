@@ -13,13 +13,4 @@ export default defineSchema({
 	})
 		.index("by_email", ["email"])
 		.index("by_clerkId", ["clerkId"]),
-
-	todos: defineTable({
-		userId: v.id("users"),
-		text: v.string(),
-		completed: v.boolean(),
-		createdAt: v.number(),
-	})
-		.index("by_user", ["userId", "createdAt"])
-		.index("by_user_completed", ["userId", "completed", "createdAt"]),
 });

@@ -1,4 +1,4 @@
-import { CheckSquare, ListTodo, Users } from "lucide-react";
+import { BarChart3, Clock, Users } from "lucide-react";
 import { Link } from "react-router";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -29,28 +29,19 @@ export function AdminDashboard() {
 
 	const quickStats = [
 		{
-			title: "Total Todos",
-			value: metrics?.todos.total || 0,
-			icon: ListTodo,
-			color: "text-blue-600",
-			bgColor: "bg-blue-50",
-			link: "/todos",
-		},
-		{
-			title: "Completed Todos",
-			value: metrics?.todos.completed || 0,
-			icon: CheckSquare,
-			color: "text-green-600",
-			bgColor: "bg-green-50",
-			link: "/todos",
-		},
-		{
 			title: "Active Users",
 			value: metrics?.users.total || 0,
 			icon: Users,
 			color: "text-purple-600",
 			bgColor: "bg-purple-50",
 			link: "/admin/users",
+		},
+		{
+			title: "Admin Users",
+			value: metrics?.users.admins || 0,
+			icon: BarChart3,
+			color: "text-blue-600",
+			bgColor: "bg-blue-50",
 		},
 	];
 
@@ -63,10 +54,10 @@ export function AdminDashboard() {
 			color: "bg-purple-500 hover:bg-purple-600",
 		},
 		{
-			title: "View Todos",
-			description: "See all user todos",
-			href: "/todos",
-			icon: ListTodo,
+			title: "System Settings",
+			description: "Configure application settings",
+			href: "/admin/settings",
+			icon: Clock,
 			color: "bg-blue-500 hover:bg-blue-600",
 		},
 	];
@@ -94,7 +85,7 @@ export function AdminDashboard() {
 			</div>
 
 			{/* Quick stats */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				{quickStats.map((stat) => {
 					const Icon = stat.icon;
 					const cardContent = (
@@ -191,21 +182,10 @@ export function AdminDashboard() {
 
 						<div className="space-y-3 pt-4 border-t">
 							<div className="flex items-center justify-between">
-								<span className="text-sm">Today's Activity</span>
+								<span className="text-sm">System Overview</span>
 							</div>
-							<div className="grid grid-cols-2 gap-2 text-sm">
-								<div className="flex justify-between">
-									<span>New Todos:</span>
-									<span className="font-semibold">
-										{metrics?.today.newTodos || 0}
-									</span>
-								</div>
-								<div className="flex justify-between">
-									<span>Completed:</span>
-									<span className="font-semibold">
-										{metrics?.today.completedTodos || 0}
-									</span>
-								</div>
+							<div className="text-sm text-gray-600">
+								Application is running smoothly with all services operational.
 							</div>
 						</div>
 					</div>

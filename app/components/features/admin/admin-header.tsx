@@ -60,7 +60,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 							Admin Dashboard
 						</h1>
 						<p className="text-sm text-gray-500">
-							Manage your todo application
+							Manage your worktime tracker application
 						</p>
 					</div>
 				</div>

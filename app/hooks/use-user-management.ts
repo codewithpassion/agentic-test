@@ -80,24 +80,16 @@ export function useRoleInfo() {
 				name: "user",
 				level: 1,
 				label: "User",
-				description: "Standard user with basic todo management permissions",
-				permissions: ["todos.create_own", "todos.edit_own", "todos.delete_own"],
+				description: "Standard user with basic access permissions",
+				permissions: [],
 			},
 			{
 				name: "admin",
 				level: 2,
 				label: "Administrator",
 				description:
-					"Administrator with elevated permissions to manage todos and view all todos",
-				permissions: [
-					"todos.create_own",
-					"todos.edit_own",
-					"todos.delete_own",
-					"todos.edit_all",
-					"todos.view_all",
-					"users.view",
-					"admin.access",
-				],
+					"Administrator with elevated permissions to manage users and access admin dashboard",
+				permissions: ["users.view", "admin.access"],
 			},
 			{
 				name: "superadmin",
@@ -106,12 +98,6 @@ export function useRoleInfo() {
 				description:
 					"Super administrator with full system access including user and role management",
 				permissions: [
-					"todos.create_own",
-					"todos.edit_own",
-					"todos.delete_own",
-					"todos.edit_all",
-					"todos.view_all",
-					"todos.delete_all",
 					"users.view",
 					"users.create",
 					"users.edit",

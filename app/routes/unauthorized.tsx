@@ -38,7 +38,7 @@ export default function UnauthorizedPage() {
 
 export function meta() {
 	return [
-		{ title: "Access Denied - Todo App" },
+		{ title: "Access Denied - Worktime Tracker" },
 		{
 			name: "description",
 			content: "You don't have permission to access this page",

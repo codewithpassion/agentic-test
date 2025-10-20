@@ -6,10 +6,11 @@ export default function AdminIndexPage() {
 
 export function meta() {
 	return [
-		{ title: "Admin Dashboard - Todo App" },
+		{ title: "Admin Dashboard - Worktime Tracker" },
 		{
 			name: "description",
-			content: "Administrative dashboard for managing the todo application",
+			content:
+				"Administrative dashboard for managing the worktime tracker application",
 		},
 	];
 }

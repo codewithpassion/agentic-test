@@ -1,10 +1,4 @@
-import {
-	ChevronRight,
-	LayoutDashboard,
-	ListTodo,
-	Users,
-	X,
-} from "lucide-react";
+import { ChevronRight, Clock, LayoutDashboard, Users, X } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
 import { useAuth } from "~/hooks/use-auth";
@@ -32,9 +26,9 @@ const navigationItems: NavItem[] = [
 		href: "/admin",
 	},
 	{
-		icon: ListTodo,
-		label: "Todos",
-		href: "/todos",
+		icon: Clock,
+		label: "Time Tracking",
+		href: "/dashboard",
 	},
 	{
 		icon: Users,
