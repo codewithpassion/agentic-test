@@ -76,7 +76,7 @@ If no file path provided, ask the user to either:
 
 ## Step 4: Generate Epics
 
-For each epic identified, create an epic document in `.agile/backlog/epics/`:
+For each epic identified, create an epic document in `ai_docs/implementation/epics/`:
 
 ### Epic File Format
 
@@ -120,7 +120,7 @@ This epic contains the following stories:
 
 ## Step 5: Generate User Stories
 
-For each user story, create a story file in `.agile/backlog/stories/`:
+For each user story, create a story file in `ai_docs/implementation/stories/`:
 
 **CRITICAL REQUIREMENTS**:
 
@@ -142,7 +142,7 @@ For each user story, create a story file in `.agile/backlog/stories/`:
 
 ### Story ID Assignment
 
-1. Check existing stories in `.agile/backlog/stories/`
+1. Check existing stories in `ai_docs/implementation/stories/`
 2. Find highest US-XXX number
 3. Assign sequential IDs starting from the next number
 4. Use zero-padded 3 digits: US-001, US-002, etc.
@@ -157,7 +157,7 @@ Use the standard user story format (see /user-story command), ensuring:
 
 ## Step 6: Create Summary Document
 
-Create a breakdown summary at `.agile/backlog/prd-breakdown-[name].md`:
+Create a breakdown summary at `ai_docs/implementation/prd-breakdown-[name].md`:
 
 ```markdown
 # PRD Breakdown: [Product Name]
@@ -203,10 +203,9 @@ Create a breakdown summary at `.agile/backlog/prd-breakdown-[name].md`:
 
 ## Next Steps
 
-1. Review and refine stories with team
+1. Review and refine stories
 2. Ensure stories meet Definition of Ready
-3. Move highest priority stories to Ready queue
-4. Start pulling work: `/pull-work`
+3. Start implementation
 ```
 
 ## Validation Checklist
@@ -246,12 +245,12 @@ After breakdown is complete, report:
 ✅ PRD Breakdown Complete!
 
 Created:
-- 3 Epics in .agile/backlog/epics/
-- 15 User Stories in .agile/backlog/stories/
-- Summary document: .agile/backlog/prd-breakdown-[name].md
+- 3 Epics in ai_docs/implementation/epics/
+- 15 User Stories in ai_docs/implementation/stories/
+- Summary document: ai_docs/implementation/prd-breakdown-[name].md
 
 Next steps:
-1. Review the breakdown: cat .agile/backlog/prd-breakdown-[name].md
+1. Review the breakdown: cat ai_docs/implementation/prd-breakdown-[name].md
 2. Refine stories if needed
 3. Move refined stories to Ready queue when they meet Definition of Ready
 4. Start pulling work: /pull-work
