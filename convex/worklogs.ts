@@ -2,11 +2,23 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
-// Get worklogs for current user
+/**
+ * Get worklogs for current user with grouping and OT/UT calculation
+ * Groups entries by date, calculates totals, and determines OT/UT status
+ * Supports filtering by status (all, overtime, undertime, normal) and pagination
+ */
 export const getMyWorklogs = query({
 	args: {
-		startDate: v.optional(v.string()),
-		endDate: v.optional(v.string()),
+		filter: v.optional(
+			v.union(
+				v.literal("all"),
+				v.literal("overtime"),
+				v.literal("undertime"),
+				v.literal("normal"),
+			),
+		),
+		limit: v.optional(v.number()),
+		offset: v.optional(v.number()),
 	},
 	handler: async (ctx: QueryCtx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -23,26 +35,71 @@ export const getMyWorklogs = query({
 			throw new ConvexError("User not found");
 		}
 
-		const query_obj = ctx.db
+		const limit = args.limit ?? 10;
+		const offset = args.offset ?? 0;
+		const filter = args.filter ?? "all";
+
+		// Get all worklogs for user
+		const worklogs = await ctx.db
 			.query("worklogs")
-			.withIndex("by_user_date", (q) => q.eq("userId", user._id));
+			.withIndex("by_user_createdAt", (q) => q.eq("userId", user._id))
+			.order("desc")
+			.collect();
 
-		const worklogs = await query_obj.collect();
-
-		// Filter by date range if provided
-		const { startDate, endDate } = args;
-		let filtered = worklogs;
-		if (startDate !== undefined) {
-			filtered = filtered.filter((w) => w.date >= startDate);
-		}
-		if (endDate !== undefined) {
-			filtered = filtered.filter((w) => w.date <= endDate);
+		// Group by date and calculate totals
+		interface DayGroup {
+			date: string;
+			entries: typeof worklogs;
+			totalHours: number;
+			status: "normal" | "overtime" | "undertime";
 		}
 
-		// Sort by date descending
-		filtered.sort((a, b) => b.date.localeCompare(a.date));
+		const groupedByDate = new Map<string, DayGroup>();
 
-		return filtered;
+		for (const worklog of worklogs) {
+			const existing = groupedByDate.get(worklog.date);
+			if (existing) {
+				existing.entries.push(worklog);
+				existing.totalHours += worklog.workedHours;
+			} else {
+				groupedByDate.set(worklog.date, {
+					date: worklog.date,
+					entries: [worklog],
+					totalHours: worklog.workedHours,
+					status: "normal",
+				});
+			}
+		}
+
+		// Calculate OT/UT status for each day
+		for (const day of groupedByDate.values()) {
+			if (day.totalHours > user.dailyMaxHours) {
+				day.status = "overtime";
+			} else if (day.totalHours < user.dailyMinHours) {
+				day.status = "undertime";
+			}
+		}
+
+		// Convert to array and sort by date descending
+		let days = Array.from(groupedByDate.values());
+		days.sort((a, b) => b.date.localeCompare(a.date));
+
+		// Apply filter
+		if (filter !== "all") {
+			days = days.filter((day) => day.status === filter);
+		}
+
+		// Apply pagination
+		const totalCount = days.length;
+		const paginatedDays = days.slice(offset, offset + limit);
+
+		return {
+			days: paginatedDays,
+			totalCount,
+			hasMore: offset + limit < totalCount,
+			userMinHours: user.dailyMinHours,
+			userMaxHours: user.dailyMaxHours,
+		};
 	},
 });
 
