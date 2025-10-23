@@ -8,6 +8,8 @@ export default defineSchema({
 		clerkId: v.string(),
 		imageUrl: v.optional(v.string()),
 		roles: v.optional(v.array(v.string())), // Store user roles from Clerk
+		dailyMinHours: v.number(),
+		dailyMaxHours: v.number(),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
@@ -22,4 +24,17 @@ export default defineSchema({
 	})
 		.index("by_user", ["userId", "createdAt"])
 		.index("by_user_completed", ["userId", "completed", "createdAt"]),
+
+	worklogs: defineTable({
+		userId: v.id("users"),
+		date: v.string(), // "YYYY-MM-DD" format
+		workedHours: v.number(),
+		taskId: v.optional(v.string()),
+		description: v.optional(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_date", ["userId", "date"])
+		.index("by_date_user", ["date", "userId"])
+		.index("by_user_createdAt", ["userId", "createdAt"]),
 });

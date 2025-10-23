@@ -28,10 +28,12 @@ export const syncUser = mutation({
 		name: v.optional(v.string()),
 		imageUrl: v.optional(v.string()),
 		roles: v.optional(v.array(v.string())),
+		dailyMinHours: v.optional(v.number()),
+		dailyMaxHours: v.optional(v.number()),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ clerkId, email, name, imageUrl, roles },
+		{ clerkId, email, name, imageUrl, roles, dailyMinHours, dailyMaxHours },
 	) => {
 		// Check if user already exists
 		const existingUser = await ctx.db
@@ -46,6 +48,8 @@ export const syncUser = mutation({
 				name,
 				imageUrl,
 				roles: roles || ["user"],
+				dailyMinHours: dailyMinHours ?? existingUser.dailyMinHours ?? 8,
+				dailyMaxHours: dailyMaxHours ?? existingUser.dailyMaxHours ?? 8,
 				updatedAt: Date.now(),
 			});
 			return existingUser._id;
@@ -58,6 +62,8 @@ export const syncUser = mutation({
 			name,
 			imageUrl,
 			roles: roles || ["user"],
+			dailyMinHours: dailyMinHours ?? 8,
+			dailyMaxHours: dailyMaxHours ?? 8,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		});
@@ -74,10 +80,12 @@ export const syncUserInternal = internalMutation({
 		name: v.optional(v.string()),
 		imageUrl: v.optional(v.string()),
 		roles: v.optional(v.array(v.string())),
+		dailyMinHours: v.optional(v.number()),
+		dailyMaxHours: v.optional(v.number()),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ clerkId, email, name, imageUrl, roles },
+		{ clerkId, email, name, imageUrl, roles, dailyMinHours, dailyMaxHours },
 	) => {
 		// Check if user already exists
 		const existingUser = await ctx.db
@@ -92,6 +100,8 @@ export const syncUserInternal = internalMutation({
 				name,
 				imageUrl,
 				roles: roles || existingUser.roles || ["user"],
+				dailyMinHours: dailyMinHours ?? existingUser.dailyMinHours ?? 8,
+				dailyMaxHours: dailyMaxHours ?? existingUser.dailyMaxHours ?? 8,
 				updatedAt: Date.now(),
 			});
 			return existingUser._id;
@@ -104,6 +114,8 @@ export const syncUserInternal = internalMutation({
 			name,
 			imageUrl,
 			roles: roles || ["user"],
+			dailyMinHours: dailyMinHours ?? 8,
+			dailyMaxHours: dailyMaxHours ?? 8,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		});
@@ -135,6 +147,16 @@ export const deleteUser = internalMutation({
 
 		for (const todo of todos) {
 			await ctx.db.delete(todo._id);
+		}
+
+		// Delete all worklogs for this user
+		const worklogs = await ctx.db
+			.query("worklogs")
+			.withIndex("by_user_date", (q) => q.eq("userId", user._id))
+			.collect();
+
+		for (const worklog of worklogs) {
+			await ctx.db.delete(worklog._id);
 		}
 
 		// Delete the user
