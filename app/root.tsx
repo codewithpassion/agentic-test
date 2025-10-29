@@ -34,7 +34,7 @@ export async function loader(args: Route.LoaderArgs) {
 		({ request, context, params }) => {
 			const { sessionId, userId, getToken } = request.auth;
 			// Add logic to fetch data
-			return { yourData: "here" };
+			return { convexUrl: context.cloudflare.env.VITE_CONVEX_URL };
 		},
 		{
 			secretKey: args.context.cloudflare.env.CLERK_SECRET_KEY,
@@ -64,7 +64,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App({ loaderData }: Route.ComponentProps) {
 	return (
 		<ClerkProvider loaderData={loaderData}>
-			<ConvexClientProvider>
+			<ConvexClientProvider convexUrl={loaderData.convexUrl}>
 				<AuthProvider>
 					<Outlet />
 					<Toaster />

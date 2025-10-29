@@ -1,17 +1,34 @@
 import { useState } from "react";
-import { Outlet } from "react-router";
-import { Navigate } from "react-router";
+import { Outlet, replace } from "react-router";
 import { useAuth } from "~/hooks/use-auth";
 import { AdminHeader } from "./admin-header";
 import { AdminSidebar } from "./admin-sidebar";
 
+export async function loader() {
+	// Note: This is a layout component. Real auth checks should happen in route loaders.
+	// This is a client-side fallback for protected content.
+	return null;
+}
+
 export function AdminLayout() {
-	const { isAdmin } = useAuth();
+	const { isAdmin, isPending } = useAuth();
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+
+	// Wait for auth to load before checking permissions
+	if (isPending) {
+		return (
+			<div className="flex h-screen items-center justify-center bg-gray-50">
+				<div className="text-center">
+					<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+					<p className="mt-4 text-gray-600">Loading...</p>
+				</div>
+			</div>
+		);
+	}
 
 	// Redirect non-admin users
 	if (!isAdmin()) {
-		return <Navigate to="/unauthorized" replace />;
+		throw replace("/unauthorized");
 	}
 
 	return (

@@ -18,6 +18,7 @@
 		"tail:prod": "wrangler tail -e production",
 		"tail:staging": "wrangler tail -e staging",
 		"convex:dev": "convex dev",
+		"convex:setup-env": "bash ./setup_convex_env.sh",
 		"convex:deploy": "convex deploy",
 		"prepare": "husky"
 	},

@@ -7,7 +7,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
-import { useAuth } from "~/contexts/auth-context";
+import type { UserRole } from "~/contexts/auth-context";
+import { useAuth } from "~/hooks/use-auth";
 import {
 	type PERMISSIONS,
 	PERMISSION_GROUPS,
@@ -68,7 +69,7 @@ export default function AdminRolesPage() {
 						<div>
 							<p className="text-sm font-medium mb-2">Roles</p>
 							<div className="flex gap-2">
-								{auth.user?.roles.map((role) => (
+								{auth.user?.roles.map((role: UserRole) => (
 									<Badge
 										key={role}
 										variant={

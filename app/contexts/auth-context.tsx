@@ -1,6 +1,7 @@
 import { useAuth as useClerkAuth, useUser } from "@clerk/react-router";
 import type { UserResource } from "@clerk/types";
-import { createContext, useContext } from "react";
+import { useConvexAuth } from "convex/react";
+import { createContext, useCallback, useEffect, useState } from "react";
 import { useClerkConvexSync } from "~/hooks/use-clerk-convex-sync";
 import { PermissionChecker, rolesHavePermission } from "~/lib/permissions";
 import type { Permission } from "~/lib/permissions";
@@ -31,27 +32,59 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
-	const { isLoaded: isAuthLoaded } = useClerkAuth();
+	const { isAuthenticated: isConvexAuthtenticated, isLoading } =
+		useConvexAuth();
 
 	// Sync Clerk user to Convex database
 	useClerkConvexSync();
 
-	const isPending = !isUserLoaded || !isAuthLoaded;
-	const isAuthenticated = isSignedIn ?? false;
+	// Track if initial auth load has ever completed
+	const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
+	useEffect(() => {
+		console.log({
+			user,
+			isUserLoaded,
+			isSignedIn,
+			isConvexAuthtenticated,
+			isLoading,
+		});
+	}, [user, isUserLoaded, isSignedIn, isConvexAuthtenticated, isLoading]);
+
+	// Determine if we're still in the initial pending state
+	const isInitiallyPending =
+		!isUserLoaded || !isSignedIn || isLoading || !isConvexAuthtenticated;
+
+	// Once auth has loaded successfully, mark it and never go back to pending
+	useEffect(() => {
+		if (!isInitiallyPending && !hasInitiallyLoaded) {
+			setHasInitiallyLoaded(true);
+		}
+	}, [isInitiallyPending, hasInitiallyLoaded]);
+
+	// isPending only reflects initial load, not subsequent reconnections
+	const isPending = !hasInitiallyLoaded;
+	const isAuthenticated = (isSignedIn && isConvexAuthtenticated) === true;
 
 	// Get roles from Clerk's publicMetadata
 	const userRoles = (user?.publicMetadata?.roles as UserRole[]) || ["user"];
 
-	const hasRole = (role: UserRole) => {
-		return userRoles.includes(role);
-	};
+	const hasRole = useCallback(
+		(role: UserRole) => {
+			return userRoles.includes(role);
+		},
+		[userRoles],
+	);
 
 	const hasPermission = (permission: Permission) => {
 		// Use the granular permission system
 		return rolesHavePermission(userRoles, permission);
 	};
 
-	const isAdmin = () => hasRole("admin") || hasRole("superadmin");
+	const isAdmin = useCallback(() => {
+		return hasRole("admin") || hasRole("superadmin");
+	}, [hasRole]);
+
 	const isSuperAdmin = () => hasRole("superadmin");
 
 	// Create a permission checker instance for advanced permission operations
@@ -82,12 +115,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-	const context = useContext(AuthContext);
-	if (!context) {
-		throw new Error("useAuth must be used within an AuthProvider");
-	}
-	return context;
 }
